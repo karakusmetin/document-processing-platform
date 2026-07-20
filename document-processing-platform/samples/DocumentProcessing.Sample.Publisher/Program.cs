@@ -3,6 +3,8 @@ using DocumentProcessing.Core.Abstractions;
 using DocumentProcessing.Messaging.RabbitMq.DependencyInjection;
 using DocumentProcessing.Messaging.RabbitMq.Services;
 using DocumentProcessing.Messaging.RabbitMq.Topology;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
 if (args.Length != 1)
 {

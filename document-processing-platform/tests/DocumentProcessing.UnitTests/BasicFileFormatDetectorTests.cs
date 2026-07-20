@@ -1,6 +1,7 @@
 using System.Text;
 using DocumentProcessing.Conversion.Detection;
 using DocumentProcessing.Core.Models;
+using Xunit;
 
 namespace DocumentProcessing.UnitTests;
 
