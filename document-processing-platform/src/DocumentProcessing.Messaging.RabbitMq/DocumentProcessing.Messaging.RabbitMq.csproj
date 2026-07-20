@@ -1,12 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="..\DocumentProcessing.Contracts\DocumentProcessing.Contracts.csproj" />
-    <ProjectReference Include="..\DocumentProcessing.Core\DocumentProcessing.Core.csproj" />
-    <PackageReference Include="RabbitMQ.Client" />
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+    <Compile Remove="Messaging.RabbitMq\**" />
+    <EmbeddedResource Remove="Messaging.RabbitMq\**" />
+    <None Remove="Messaging.RabbitMq\**" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Messaging.RabbitMq\" />
-    <Folder Include="Connection\" />
+    <ProjectReference Include="..\DocumentProcessing.Contracts\DocumentProcessing.Contracts.csproj" />
+    <ProjectReference Include="..\DocumentProcessing.Core\DocumentProcessing.Core.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="RabbitMQ.Client" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
   </ItemGroup>
 </Project>

@@ -1,11 +1,12 @@
 using System.Text.Json;
 using DocumentProcessing.Core.Abstractions;
+using DocumentProcessing.Messaging.RabbitMq.Connection;
 using DocumentProcessing.Messaging.RabbitMq.Topology;
 using RabbitMQ.Client;
 
 namespace DocumentProcessing.Messaging.RabbitMq.Services;
 
-public sealed class RabbitMqEventPublisher(RabbitMqConnectionProvider connectionProvider) : IIntegrationEventPublisher
+public sealed class RabbitMqEventPublisher(IRabbitMqConnectionProvider connectionProvider) : IIntegrationEventPublisher
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
 

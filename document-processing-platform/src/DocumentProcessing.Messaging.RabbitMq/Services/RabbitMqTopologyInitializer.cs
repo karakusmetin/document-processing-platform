@@ -1,9 +1,10 @@
+using DocumentProcessing.Messaging.RabbitMq.Connection;
 using DocumentProcessing.Messaging.RabbitMq.Topology;
 using RabbitMQ.Client;
 
 namespace DocumentProcessing.Messaging.RabbitMq.Services;
 
-public sealed class RabbitMqTopologyInitializer(RabbitMqConnectionProvider connectionProvider)
+public sealed class RabbitMqTopologyInitializer(IRabbitMqConnectionProvider connectionProvider)
 {
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
