@@ -16,8 +16,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Worker",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Client", "src\DocumentProcessing.Client\DocumentProcessing.Client.csproj", "{AED81D9F-96BB-59DE-B965-3780944DBABB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Integration.Editt", "src\DocumentProcessing.Integration.Editt\DocumentProcessing.Integration.Editt.csproj", "{A9A4A0A4-6361-55CE-BC06-26E927F24C58}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.UnitTests", "tests\DocumentProcessing.UnitTests\DocumentProcessing.UnitTests.csproj", "{5FF8977A-BE47-5C04-AF89-F20A6175DA3A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Sample.Publisher", "samples\DocumentProcessing.Sample.Publisher\DocumentProcessing.Sample.Publisher.csproj", "{3219D689-6487-5540-8898-54D357965768}"
@@ -56,10 +54,6 @@ Global
 		{AED81D9F-96BB-59DE-B965-3780944DBABB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AED81D9F-96BB-59DE-B965-3780944DBABB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AED81D9F-96BB-59DE-B965-3780944DBABB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A9A4A0A4-6361-55CE-BC06-26E927F24C58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A9A4A0A4-6361-55CE-BC06-26E927F24C58}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A9A4A0A4-6361-55CE-BC06-26E927F24C58}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A9A4A0A4-6361-55CE-BC06-26E927F24C58}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5FF8977A-BE47-5C04-AF89-F20A6175DA3A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5FF8977A-BE47-5C04-AF89-F20A6175DA3A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5FF8977A-BE47-5C04-AF89-F20A6175DA3A}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -68,5 +62,11 @@ Global
 		{3219D689-6487-5540-8898-54D357965768}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3219D689-6487-5540-8898-54D357965768}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3219D689-6487-5540-8898-54D357965768}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8516ABBC-3A7E-4A1D-AAE8-B76525AD7808}
 	EndGlobalSection
 EndGlobal
