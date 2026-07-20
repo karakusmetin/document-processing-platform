@@ -1,3 +1,4 @@
+using DocumentProcessing.Messaging.RabbitMq.Channels;
 using DocumentProcessing.Messaging.RabbitMq.Configuration;
 using DocumentProcessing.Messaging.RabbitMq.Connection;
 using DocumentProcessing.Messaging.RabbitMq.Serialization;
@@ -16,8 +17,12 @@ public static class ServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(configuration);
 
         services.AddRabbitMqOptions(configuration);
+
         services.AddSingleton<IMessageSerializer,SystemTextJsonMessageSerializer>();
+
         services.AddSingleton<IRabbitMqConnectionProvider,RabbitMqConnectionProvider>();
+
+        services.AddSingleton<IRabbitMqChannelFactory,RabbitMqChannelFactory>();
 
         return services;
     }
