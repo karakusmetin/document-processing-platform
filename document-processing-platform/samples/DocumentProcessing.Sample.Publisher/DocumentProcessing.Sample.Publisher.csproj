@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DocumentProcessing.Contracts\DocumentProcessing.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\DocumentProcessing.Core\DocumentProcessing.Core.csproj" />
+    <ProjectReference Include="..\..\src\DocumentProcessing.Messaging.RabbitMq\DocumentProcessing.Messaging.RabbitMq.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\DocumentProcessing.Contracts\DocumentProcessing.Contracts.csproj" />
+    <ProjectReference Include="..\DocumentProcessing.Core\DocumentProcessing.Core.csproj" />
+    <ProjectReference Include="..\DocumentProcessing.Conversion\DocumentProcessing.Conversion.csproj" />
+    <ProjectReference Include="..\DocumentProcessing.Messaging.RabbitMq\DocumentProcessing.Messaging.RabbitMq.csproj" />
+    <ProjectReference Include="..\DocumentProcessing.Storage\DocumentProcessing.Storage.csproj" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" />
+  </ItemGroup>
+</Project>

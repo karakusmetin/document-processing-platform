@@ -1,0 +1,19 @@
+name: Feature
+about: Yeni özellik veya teknik görev
+body:
+  - type: textarea
+    id: objective
+    attributes:
+      label: Amaç
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Kabul kriterleri
+    validations:
+      required: true
+  - type: textarea
+    id: technical
+    attributes:
+      label: Teknik notlar
