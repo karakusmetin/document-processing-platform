@@ -8,6 +8,5 @@
   <ItemGroup>
     <Folder Include="Messaging.RabbitMq\" />
     <Folder Include="Connection\" />
-    <Folder Include="Serialization\" />
   </ItemGroup>
 </Project>
