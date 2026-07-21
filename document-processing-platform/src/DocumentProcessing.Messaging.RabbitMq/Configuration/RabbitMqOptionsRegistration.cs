@@ -73,24 +73,34 @@ internal static class RabbitMqOptionsRegistration
                 "Consumer shutdown timeout must be greater than zero.")
             .ValidateOnStart();
 
-        services
+       services
             .AddOptions<RabbitMqRetryOptions>()
             .Bind(configuration.GetSection(
                 RabbitMqRetryOptions.SectionName))
             .Validate(
-                static options => options.MaximumAttempts > 0,
-                "Maximum retry attempt count must be greater than zero.")
+                static options =>
+                    options.MaximumAttempts >= 1,
+                "MaximumAttempts must be at least one.")
             .Validate(
                 static options =>
-                    options.DelaySeconds is { Length: > 0 } &&
+                    options.DelaySeconds is not null &&
                     options.DelaySeconds.All(
                         static delay => delay > 0),
                 "Every retry delay must be greater than zero.")
             .Validate(
                 static options =>
-                    options.MaximumAttempts ==
-                    options.DelaySeconds.Length + 1,
-                "MaximumAttempts must equal retry delay count plus one.")
+                    options.DelaySeconds is not null &&
+                    options.DelaySeconds
+                        .Distinct()
+                        .Count() ==
+                    options.DelaySeconds.Length,
+                "Retry delays must be unique.")
+            .Validate(
+                static options =>
+                    options.DelaySeconds is not null &&
+                    options.DelaySeconds.Length ==
+                    options.MaximumAttempts - 1,
+                "Retry delay count must equal MaximumAttempts minus one.")
             .ValidateOnStart();
 
         services
@@ -98,23 +108,37 @@ internal static class RabbitMqOptionsRegistration
             .Bind(configuration.GetSection(
                 RabbitMqTopologyOptions.SectionName))
             .Validate(
-                static options =>
-                    HasValue(options.CommandExchange) &&
-                    HasValue(options.EventExchange) &&
-                    HasValue(options.DeadLetterExchange) &&
-                    HasValue(options.ConversionRequestQueue) &&
-                    HasValue(options.ConversionDeadLetterQueue) &&
-                    HasValue(options.ConversionRequestedRoutingKey) &&
-                    HasValue(options.ConversionCompletedRoutingKey) &&
-                    HasValue(options.ConversionFailedRoutingKey) &&
-                    HasValue(options.ConversionDeadLetterRoutingKey) &&
-                    HasValue(options.RetryQueuePrefix),
+                options =>
+                    !string.IsNullOrWhiteSpace(
+                        options.CommandExchange) &&
+                    !string.IsNullOrWhiteSpace(
+                        options.EventExchange) &&
+                    !string.IsNullOrWhiteSpace(
+                        options.RetryExchange) &&
+                    !string.IsNullOrWhiteSpace(
+                        options.DeadLetterExchange) &&
+                    !string.IsNullOrWhiteSpace(
+                        options.ConversionRequestQueue) &&
+                    !string.IsNullOrWhiteSpace(
+                        options.ConversionDeadLetterQueue) &&
+                    !string.IsNullOrWhiteSpace(
+                        options.ConversionRequestedRoutingKey) &&
+                    !string.IsNullOrWhiteSpace(
+                        options.ConversionCompletedRoutingKey) &&
+                    !string.IsNullOrWhiteSpace(
+                        options.ConversionFailedRoutingKey) &&
+                    !string.IsNullOrWhiteSpace(
+                        options.ConversionDeadLetterRoutingKey) &&
+                    !string.IsNullOrWhiteSpace(
+                        options.RetryQueuePrefix) &&
+                    !string.IsNullOrWhiteSpace(
+                        options.RetryRoutingKeyPrefix),
                 "RabbitMQ topology names cannot be empty.")
+            .Validate(
+                options => Enum.IsDefined(options.QueueType),
+                "RabbitMQ queue type is not supported.")
             .ValidateOnStart();
 
         return services;
     }
-
-    private static bool HasValue(string? value) =>
-        !string.IsNullOrWhiteSpace(value);
 }

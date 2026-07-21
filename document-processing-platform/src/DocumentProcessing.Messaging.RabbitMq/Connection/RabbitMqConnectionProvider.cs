@@ -6,8 +6,7 @@ using RabbitMQ.Client.Events;
 
 namespace DocumentProcessing.Messaging.RabbitMq.Connection;
 
-internal sealed class RabbitMqConnectionProvider :
-    IRabbitMqConnectionProvider
+internal sealed class RabbitMqConnectionProvider : IRabbitMqConnectionProvider
 {
     private readonly RabbitMqConnectionOptions _options;
     private readonly ILogger<RabbitMqConnectionProvider> _logger;

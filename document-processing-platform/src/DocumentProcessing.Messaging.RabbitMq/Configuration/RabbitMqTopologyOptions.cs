@@ -23,4 +23,10 @@ public sealed class RabbitMqTopologyOptions
     public string ConversionDeadLetterRoutingKey { get; set; } = "conversion.dead.v1";
 
     public string RetryQueuePrefix { get; set; } = "document.processing.conversion.retry";
+   
+    public string RetryExchange { get; set; } = string.Empty;
+
+    public string RetryRoutingKeyPrefix { get; set; } = string.Empty;
+
+    public RabbitMqQueueType QueueType { get; set; } = RabbitMqQueueType.Classic;
 }

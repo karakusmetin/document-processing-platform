@@ -1,22 +1,23 @@
-using System.Text.Json;
 using DocumentProcessing.Contracts.Messages;
 using DocumentProcessing.Core.Abstractions;
 using DocumentProcessing.Core.Models;
-using DocumentProcessing.Messaging.RabbitMq.Options;
+using DocumentProcessing.Messaging.RabbitMq.Configuration;
+using DocumentProcessing.Messaging.RabbitMq.Connection;
 using DocumentProcessing.Messaging.RabbitMq.Services;
 using DocumentProcessing.Messaging.RabbitMq.Topology;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using System.Text.Json;
 
 namespace DocumentProcessing.Worker;
 
 public sealed class ConversionConsumerWorker(
-    RabbitMqConnectionProvider connectionProvider,
+    IRabbitMqConnectionProvider connectionProvider,
     RabbitMqTopologyInitializer topologyInitializer,
     IConversionOrchestrator orchestrator,
     IIntegrationEventPublisher publisher,
-    IOptions<RabbitMqOptions> options,
+    IOptions<RabbitMqConsumerOptions> options,
     ILogger<ConversionConsumerWorker> logger) : BackgroundService
 {
     private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
