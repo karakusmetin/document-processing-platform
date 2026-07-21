@@ -18,31 +18,48 @@ internal static class RabbitMqOptionsRegistration
                 static options =>
                     options.HostNames is { Length: > 0 } &&
                     options.HostNames.All(
-                        static host => !string.IsNullOrWhiteSpace(host)),
+                        static host =>
+                            !string.IsNullOrWhiteSpace(host)),
                 "At least one RabbitMQ host name must be configured.")
             .Validate(
-                static options => options.Port is > 0 and <= 65535,
+                static options =>
+                    options.Port is > 0 and <= 65535,
                 "RabbitMQ port must be between 1 and 65535.")
             .Validate(
                 static options =>
-                    !string.IsNullOrWhiteSpace(options.VirtualHost),
+                    !string.IsNullOrWhiteSpace(
+                        options.VirtualHost),
                 "RabbitMQ virtual host is required.")
             .Validate(
                 static options =>
-                    !string.IsNullOrWhiteSpace(options.UserName),
+                    !string.IsNullOrWhiteSpace(
+                        options.UserName),
                 "RabbitMQ user name is required.")
             .Validate(
                 static options =>
-                    !string.IsNullOrWhiteSpace(options.Password),
+                    !string.IsNullOrWhiteSpace(
+                        options.Password),
                 "RabbitMQ password is required.")
             .Validate(
                 static options =>
-                    options.NetworkRecoveryInterval > TimeSpan.Zero,
+                    !string.IsNullOrWhiteSpace(
+                        options.ClientProvidedName),
+                "RabbitMQ client provided name is required.")
+            .Validate(
+                static options =>
+                    options.NetworkRecoveryInterval >
+                    TimeSpan.Zero,
                 "Network recovery interval must be greater than zero.")
             .Validate(
                 static options =>
-                    options.RequestedConnectionTimeout > TimeSpan.Zero,
+                    options.RequestedConnectionTimeout >
+                    TimeSpan.Zero,
                 "Connection timeout must be greater than zero.")
+            .Validate(
+                static options =>
+                    options.RequestedHeartbeat >
+                    TimeSpan.Zero,
+                "Requested heartbeat must be greater than zero.")
             .ValidateOnStart();
 
         services
@@ -51,11 +68,13 @@ internal static class RabbitMqOptionsRegistration
                 RabbitMqPublisherOptions.SectionName))
             .Validate(
                 static options =>
+                    !string.IsNullOrWhiteSpace(
+                        options.ProducerName),
+                "RabbitMQ publisher producer name is required.")
+            .Validate(
+                static options =>
                     options.ConfirmationTimeout > TimeSpan.Zero,
                 "Publisher confirmation timeout must be greater than zero.")
-            .Validate(
-                static options => options.DeliveryMode is 1 or 2,
-                "Delivery mode must be either 1 or 2.")
             .ValidateOnStart();
 
         services

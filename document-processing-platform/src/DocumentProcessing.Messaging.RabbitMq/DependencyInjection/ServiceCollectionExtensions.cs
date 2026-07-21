@@ -1,6 +1,8 @@
+using DocumentProcessing.Core.Abstractions;
 using DocumentProcessing.Messaging.RabbitMq.Channels;
 using DocumentProcessing.Messaging.RabbitMq.Configuration;
 using DocumentProcessing.Messaging.RabbitMq.Connection;
+using DocumentProcessing.Messaging.RabbitMq.Publishing;
 using DocumentProcessing.Messaging.RabbitMq.Serialization;
 using DocumentProcessing.Messaging.RabbitMq.Topology;
 using Microsoft.Extensions.Configuration;
@@ -24,6 +26,12 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRabbitMqChannelFactory,RabbitMqChannelFactory>();
 
         services.AddSingleton<IRabbitMqTopologyInitializer,RabbitMqTopologyInitializer>();
+        
+        services.AddSingleton<IRabbitMqMessageRouteResolver,RabbitMqMessageRouteResolver>();
+
+        services.AddSingleton<IRabbitMqPublisher,RabbitMqPublisher>();
+
+        services.AddSingleton<IMessagePublisher,RabbitMqMessagePublisher>();
 
         return services;
     }

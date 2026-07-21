@@ -4,13 +4,7 @@ public sealed class RabbitMqPublisherOptions
 {
     public const string SectionName = "RabbitMq:Publisher";
 
-    public bool PublisherConfirmationsEnabled { get; set; } = true;
-
-    public bool PublisherConfirmationTrackingEnabled { get; set; } = true;
-
-    public bool Mandatory { get; set; } = true;
+    public string ProducerName { get; set; } = string.Empty;
 
     public TimeSpan ConfirmationTimeout { get; set; } = TimeSpan.FromSeconds(15);
-
-    public byte DeliveryMode { get; set; } = 2;
 }

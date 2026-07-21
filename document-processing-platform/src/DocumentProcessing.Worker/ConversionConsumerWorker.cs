@@ -1,128 +1,408 @@
+using DocumentProcessing.Contracts.Messaging;
 using DocumentProcessing.Contracts.Messages;
 using DocumentProcessing.Core.Abstractions;
 using DocumentProcessing.Core.Models;
 using DocumentProcessing.Messaging.RabbitMq.Configuration;
 using DocumentProcessing.Messaging.RabbitMq.Connection;
-using DocumentProcessing.Messaging.RabbitMq.Services;
-using DocumentProcessing.Messaging.RabbitMq.Topology;
+using DocumentProcessing.Messaging.RabbitMq.Serialization;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
-using System.Text.Json;
 
 namespace DocumentProcessing.Worker;
 
 public sealed class ConversionConsumerWorker(
     IRabbitMqConnectionProvider connectionProvider,
-    RabbitMqTopologyInitializer topologyInitializer,
+    IMessageSerializer messageSerializer,
     IConversionOrchestrator orchestrator,
-    IIntegrationEventPublisher publisher,
-    IOptions<RabbitMqConsumerOptions> options,
-    ILogger<ConversionConsumerWorker> logger) : BackgroundService
+    IMessagePublisher publisher,
+    IOptions<RabbitMqConsumerOptions> consumerOptions,
+    IOptions<RabbitMqTopologyOptions> topologyOptions,
+    ILogger<ConversionConsumerWorker> logger)
+    : BackgroundService
 {
-    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web);
     private IChannel? _channel;
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(
+        CancellationToken stoppingToken)
     {
-        await topologyInitializer.InitializeAsync(stoppingToken);
-        IConnection connection = await connectionProvider.GetConnectionAsync(stoppingToken);
-        _channel = await connection.CreateChannelAsync(cancellationToken: stoppingToken);
-        await _channel.BasicQosAsync(0, options.Value.PrefetchCount, global: false, cancellationToken: stoppingToken);
+        /*
+         * Topology burada tekrar initialize edilmiyor.
+         *
+         * AddRabbitMqTopologyInitialization() ile kaydedilen
+         * RabbitMqTopologyHostedService, bu worker başlamadan önce
+         * topology initialization işlemini gerçekleştiriyor.
+         */
 
-        AsyncEventingBasicConsumer consumer = new(_channel);
-        consumer.ReceivedAsync += HandleMessageAsync;
+        IConnection connection =
+            await connectionProvider
+                .GetConnectionAsync(stoppingToken)
+                .ConfigureAwait(false);
 
-        await _channel.BasicConsumeAsync(
-            RabbitMqTopology.RequestQueue,
-            autoAck: false,
-            consumer,
-            cancellationToken: stoppingToken);
+        _channel =
+            await connection
+                .CreateChannelAsync(
+                    cancellationToken: stoppingToken)
+                .ConfigureAwait(false);
 
-        logger.LogInformation("Listening on queue {Queue}", RabbitMqTopology.RequestQueue);
-        await Task.Delay(Timeout.Infinite, stoppingToken);
+        await _channel
+            .BasicQosAsync(
+                prefetchSize: 0,
+                prefetchCount:
+                    consumerOptions.Value.PrefetchCount,
+                global: false,
+                cancellationToken: stoppingToken)
+            .ConfigureAwait(false);
+
+        AsyncEventingBasicConsumer consumer =
+            new(_channel);
+
+        consumer.ReceivedAsync +=
+            HandleMessageAsync;
+
+        string queueName =
+            topologyOptions.Value.ConversionRequestQueue;
+
+        await _channel
+            .BasicConsumeAsync(
+                queue: queueName,
+                autoAck: false,
+                consumer: consumer,
+                cancellationToken: stoppingToken)
+            .ConfigureAwait(false);
+
+        logger.LogInformation(
+            "Listening on RabbitMQ queue {Queue}. " +
+            "PrefetchCount: {PrefetchCount}",
+            queueName,
+            consumerOptions.Value.PrefetchCount);
+
+        await Task
+            .Delay(
+                Timeout.InfiniteTimeSpan,
+                stoppingToken)
+            .ConfigureAwait(false);
     }
 
-    private async Task HandleMessageAsync(object sender, BasicDeliverEventArgs eventArgs)
+    private async Task HandleMessageAsync(
+        object sender,
+        BasicDeliverEventArgs eventArgs)
     {
-        if (_channel is null)
+        IChannel? channel = _channel;
+
+        if (channel is null || !channel.IsOpen)
         {
+            logger.LogWarning(
+                "RabbitMQ message was received while the " +
+                "consumer channel was unavailable.");
+
             return;
         }
 
         try
         {
-            ConversionRequested? message = JsonSerializer.Deserialize<ConversionRequested>(eventArgs.Body.Span, SerializerOptions);
-            if (message is null)
-            {
-                throw new JsonException("ConversionRequested payload is null.");
-            }
+            /*
+             * RabbitMQ body artık çıplak ConversionRequested değil:
+             *
+             * MessageEnvelope<ConversionRequested>
+             *
+             * IMessageSerializer kullanarak publisher ile consumer'ın
+             * aynı JSON kurallarını kullanmasını sağlıyoruz.
+             */
+            MessageEnvelope<ConversionRequested> envelope =
+                messageSerializer
+                    .Deserialize<ConversionRequested>(
+                        eventArgs.Body);
 
-            using IDisposable? scope = logger.BeginScope(new Dictionary<string, object>
-            {
-                ["JobId"] = message.JobId,
-                ["CorrelationId"] = message.CorrelationId
-            });
+            ValidateEnvelope(envelope);
 
-            ConversionExecutionResult result = await orchestrator.ExecuteAsync(new ConversionRequest
-            {
-                JobId = message.JobId,
-                CorrelationId = message.CorrelationId,
-                SourceReference = message.SourceReference,
-                SourceFileName = message.SourceFileName,
-                Profile = message.Profile,
-                Attempt = message.Attempt
-            }, CancellationToken.None);
+            ConversionRequested message =
+                envelope.Payload;
+
+            string correlationId =
+                !string.IsNullOrWhiteSpace(
+                    envelope.CorrelationId)
+                    ? envelope.CorrelationId
+                    : message.CorrelationId;
+
+            using IDisposable? scope =
+                logger.BeginScope(
+                    new Dictionary<string, object>
+                    {
+                        ["JobId"] = message.JobId,
+                        ["MessageId"] =
+                            envelope.MessageId,
+                        ["CorrelationId"] =
+                            correlationId,
+                        ["Attempt"] =
+                            envelope.Attempt
+                    });
+
+            ConversionExecutionResult result =
+                await orchestrator
+                    .ExecuteAsync(
+                        new ConversionRequest
+                        {
+                            JobId =
+                                message.JobId,
+
+                            CorrelationId =
+                                correlationId,
+
+                            SourceReference =
+                                message.SourceReference,
+
+                            SourceFileName =
+                                message.SourceFileName,
+
+                            Profile =
+                                message.Profile,
+
+                            /*
+                             * Retry/attempt bilgisinin asıl kaynağı
+                             * envelope'dur.
+                             */
+                            Attempt =
+                                envelope.Attempt
+                        },
+                        CancellationToken.None)
+                    .ConfigureAwait(false);
+
+            /*
+             * ConversionCompleted ve ConversionFailed mesajları,
+             * gelen request mesajının sonucudur.
+             *
+             * Bu nedenle:
+             *
+             * CorrelationId aynı kalır.
+             * CausationId gelen request'in MessageId değeridir.
+             * Yeni event ilk kez yayınlandığı için Attempt = 1 olur.
+             */
+            MessagePublishContext publishContext =
+                new()
+                {
+                    CorrelationId =
+                        correlationId,
+
+                    CausationId =
+                        envelope.MessageId.ToString("D"),
+
+                    Attempt = 1
+                };
 
             if (result.IsSuccess)
             {
-                ConversionCompleted completed = new()
-                {
-                    JobId = message.JobId,
-                    CorrelationId = message.CorrelationId,
-                    OutputReference = result.OutputReference!,
-                    OutputFormat = "pdf",
-                    OutputSize = result.OutputSize,
-                    OutputSha256 = result.OutputSha256!,
-                    PageCount = result.PageCount,
-                    Provider = result.Provider!
-                };
+                ConversionCompleted completed =
+                    new()
+                    {
+                        JobId =
+                            message.JobId,
 
-                await publisher.PublishAsync(completed, RabbitMqTopology.CompletedRoutingKey, CancellationToken.None);
-                await _channel.BasicAckAsync(eventArgs.DeliveryTag, multiple: false);
-                logger.LogInformation("Conversion completed using {Provider}", result.Provider);
+                        CorrelationId =
+                            correlationId,
+
+                        OutputReference =
+                            result.OutputReference!,
+
+                        OutputFormat =
+                            "pdf",
+
+                        OutputSize =
+                            result.OutputSize,
+
+                        OutputSha256 =
+                            result.OutputSha256!,
+
+                        PageCount =
+                            result.PageCount,
+
+                        Provider =
+                            result.Provider!
+                    };
+
+                /*
+                 * Artık routing key vermiyoruz.
+                 *
+                 * RabbitMqMessageRouteResolver,
+                 * ConversionCompleted türünü EventExchange ve
+                 * ConversionCompletedRoutingKey ile eşleştirecek.
+                 */
+                await publisher
+                    .PublishAsync(
+                        completed,
+                        publishContext,
+                        CancellationToken.None)
+                    .ConfigureAwait(false);
+
+                /*
+                 * Result eventi publisher confirm aldıktan sonra
+                 * request mesajını ACK ediyoruz.
+                 *
+                 * Böylece completed eventi yayınlanmadan request
+                 * queue'dan silinmez.
+                 */
+                await channel
+                    .BasicAckAsync(
+                        deliveryTag:
+                            eventArgs.DeliveryTag,
+                        multiple: false)
+                    .ConfigureAwait(false);
+
+                logger.LogInformation(
+                    "Conversion completed using provider {Provider}.",
+                    result.Provider);
+
                 return;
             }
 
-            ConversionFailed failed = new()
-            {
-                JobId = message.JobId,
-                CorrelationId = message.CorrelationId,
-                ErrorCode = result.ErrorCode!,
-                Message = result.ErrorMessage!,
-                Retryable = result.Retryable,
-                FailedStage = result.FailedStage!,
-                Attempt = message.Attempt,
-                DiagnosticId = Guid.NewGuid().ToString("N")
-            };
+            ConversionFailed failed =
+                new()
+                {
+                    JobId =
+                        message.JobId,
 
-            await publisher.PublishAsync(failed, RabbitMqTopology.FailedRoutingKey, CancellationToken.None);
-            await _channel.BasicNackAsync(eventArgs.DeliveryTag, multiple: false, requeue: result.Retryable);
-            logger.LogWarning("Conversion failed: {ErrorCode}", result.ErrorCode);
+                    CorrelationId =
+                        correlationId,
+
+                    ErrorCode =
+                        result.ErrorCode!,
+
+                    Message =
+                        result.ErrorMessage!,
+
+                    Retryable =
+                        result.Retryable,
+
+                    FailedStage =
+                        result.FailedStage!,
+
+                    Attempt =
+                        envelope.Attempt,
+
+                    DiagnosticId =
+                        Guid.NewGuid().ToString("N")
+                };
+
+            /*
+             * ConversionFailed route'u da mesaj türünden
+             * otomatik çözülecek.
+             */
+            await publisher
+                .PublishAsync(
+                    failed,
+                    publishContext,
+                    CancellationToken.None)
+                .ConfigureAwait(false);
+
+            /*
+             * Bu requeue davranışı şimdilik mevcut akışı koruyor.
+             *
+             * DPP-001-07/08 adımında retryable mesajı doğrudan
+             * requeue:true yapmak yerine 10s/60s/300s retry
+             * queue'larına publish edeceğiz.
+             */
+            await channel
+                .BasicNackAsync(
+                    deliveryTag:
+                        eventArgs.DeliveryTag,
+                    multiple: false,
+                    requeue:
+                        result.Retryable)
+                .ConfigureAwait(false);
+
+            logger.LogWarning(
+                "Conversion failed. ErrorCode: {ErrorCode}, " +
+                "Retryable: {Retryable}",
+                result.ErrorCode,
+                result.Retryable);
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            logger.LogError(ex, "Unhandled error while processing message");
-            await _channel.BasicNackAsync(eventArgs.DeliveryTag, multiple: false, requeue: false);
+            logger.LogError(
+                exception,
+                "Unhandled error while processing RabbitMQ message. " +
+                "DeliveryTag: {DeliveryTag}",
+                eventArgs.DeliveryTag);
+
+            /*
+             * Deserialize edilemeyen veya beklenmeyen şekilde
+             * hata veren mesaj ana queue'ya hemen geri bırakılmıyor.
+             *
+             * Conversion request queue'nun DLX ayarı bulunduğu için
+             * requeue:false mesajı dead-letter akışına gönderir.
+             */
+            await channel
+                .BasicNackAsync(
+                    deliveryTag:
+                        eventArgs.DeliveryTag,
+                    multiple: false,
+                    requeue: false)
+                .ConfigureAwait(false);
         }
     }
 
-    public override async Task StopAsync(CancellationToken cancellationToken)
+    private static void ValidateEnvelope(
+        MessageEnvelope<ConversionRequested> envelope)
     {
-        if (_channel is not null)
+        if (!string.Equals(
+                envelope.MessageType,
+                ConversionMessageTypes.ConversionRequested,
+                StringComparison.Ordinal))
         {
-            await _channel.DisposeAsync();
+            throw new InvalidOperationException(
+                $"Unexpected RabbitMQ message type. " +
+                $"Expected: " +
+                $"'{ConversionMessageTypes.ConversionRequested}', " +
+                $"Actual: '{envelope.MessageType}'.");
         }
-        await base.StopAsync(cancellationToken);
+
+        if (!string.Equals(
+                envelope.MessageVersion,
+                ConversionMessageVersions.V1,
+                StringComparison.Ordinal))
+        {
+            throw new NotSupportedException(
+                $"Unsupported ConversionRequested message version. " +
+                $"Expected: '{ConversionMessageVersions.V1}', " +
+                $"Actual: '{envelope.MessageVersion}'.");
+        }
+
+        if (envelope.Attempt < 1)
+        {
+            throw new InvalidOperationException(
+                $"Message attempt must be greater than zero. " +
+                $"Actual: {envelope.Attempt}.");
+        }
+    }
+
+    public override async Task StopAsync(
+        CancellationToken cancellationToken)
+    {
+        IChannel? channel = _channel;
+        _channel = null;
+
+        if (channel is not null)
+        {
+            try
+            {
+                await channel
+                    .DisposeAsync()
+                    .ConfigureAwait(false);
+
+                logger.LogInformation(
+                    "RabbitMQ conversion consumer channel disposed.");
+            }
+            catch (Exception exception)
+            {
+                logger.LogWarning(
+                    exception,
+                    "An error occurred while disposing the " +
+                    "RabbitMQ conversion consumer channel.");
+            }
+        }
+
+        await base
+            .StopAsync(cancellationToken)
+            .ConfigureAwait(false);
     }
 }

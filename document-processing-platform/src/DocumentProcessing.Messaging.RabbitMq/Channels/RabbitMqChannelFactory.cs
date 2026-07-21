@@ -10,23 +10,19 @@ namespace DocumentProcessing.Messaging.RabbitMq.Channels;
 internal sealed class RabbitMqChannelFactory : IRabbitMqChannelFactory
 {
     private readonly IRabbitMqConnectionProvider _connectionProvider;
-    private readonly RabbitMqPublisherOptions _publisherOptions;
     private readonly RabbitMqConsumerOptions _consumerOptions;
     private readonly ILogger<RabbitMqChannelFactory> _logger;
 
     public RabbitMqChannelFactory(
         IRabbitMqConnectionProvider connectionProvider,
-        IOptions<RabbitMqPublisherOptions> publisherOptions,
         IOptions<RabbitMqConsumerOptions> consumerOptions,
         ILogger<RabbitMqChannelFactory> logger)
     {
         ArgumentNullException.ThrowIfNull(connectionProvider);
-        ArgumentNullException.ThrowIfNull(publisherOptions);
         ArgumentNullException.ThrowIfNull(consumerOptions);
         ArgumentNullException.ThrowIfNull(logger);
 
         _connectionProvider = connectionProvider;
-        _publisherOptions = publisherOptions.Value;
         _consumerOptions = consumerOptions.Value;
         _logger = logger;
     }
@@ -109,14 +105,11 @@ internal sealed class RabbitMqChannelFactory : IRabbitMqChannelFactory
         };
     }
 
-    private CreateChannelOptions CreatePublisherOptions()
+    private static CreateChannelOptions CreatePublisherOptions()
     {
         return new CreateChannelOptions(
-            publisherConfirmationsEnabled:
-                _publisherOptions.PublisherConfirmationsEnabled,
-            publisherConfirmationTrackingEnabled:
-                _publisherOptions
-                    .PublisherConfirmationTrackingEnabled,
+            publisherConfirmationsEnabled: true,
+            publisherConfirmationTrackingEnabled: true,
             outstandingPublisherConfirmationsRateLimiter: null,
             consumerDispatchConcurrency: null);
     }

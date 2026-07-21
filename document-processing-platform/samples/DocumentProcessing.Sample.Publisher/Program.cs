@@ -1,7 +1,7 @@
+using DocumentProcessing.Contracts.Messaging;
 using DocumentProcessing.Contracts.Messages;
 using DocumentProcessing.Core.Abstractions;
 using DocumentProcessing.Messaging.RabbitMq.DependencyInjection;
-using DocumentProcessing.Messaging.RabbitMq.Topology;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -26,7 +26,9 @@ if (!File.Exists(inputPath))
 HostApplicationBuilder builder =
     Host.CreateApplicationBuilder(args);
 
-builder.Services.AddRabbitMqMessaging(builder.Configuration).AddRabbitMqTopologyInitialization();
+builder.Services
+    .AddRabbitMqMessaging(builder.Configuration)
+    .AddRabbitMqTopologyInitialization();
 
 using IHost host = builder.Build();
 
@@ -34,24 +36,36 @@ await host.StartAsync();
 
 try
 {
-    IIntegrationEventPublisher publisher =host.Services.GetRequiredService<IIntegrationEventPublisher>();
+    IMessagePublisher publisher =
+        host.Services.GetRequiredService<IMessagePublisher>();
 
     Guid jobId = Guid.NewGuid();
+
+    string correlationId =
+        Guid.NewGuid().ToString("N");
 
     ConversionRequested message = new()
     {
         JobId = jobId,
-        CorrelationId = Guid.NewGuid().ToString("N"),
+        CorrelationId = correlationId,
         SourceReference =
             $"local://{Uri.EscapeDataString(
                 Path.GetFileName(inputPath))}",
-        SourceFileName = Path.GetFileName(inputPath),
-        Profile = "display-copy"
+        SourceFileName =
+            Path.GetFileName(inputPath),
+        Profile =
+            "display-copy"
+    };
+
+    MessagePublishContext publishContext = new()
+    {
+        CorrelationId = correlationId,
+        Attempt = 1
     };
 
     await publisher.PublishAsync(
         message,
-        RabbitMqTopology.RequestedRoutingKey,
+        publishContext,
         CancellationToken.None);
 
     Console.WriteLine(
