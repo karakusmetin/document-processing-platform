@@ -90,6 +90,16 @@ internal static class RabbitMqOptionsRegistration
             .Validate(
                 static options => options.ShutdownTimeout > TimeSpan.Zero,
                 "Consumer shutdown timeout must be greater than zero.")
+            .Validate(
+                static options =>
+                    !options.AutoAcknowledgement,
+                "Automatic acknowledgement is not supported. " +
+                "RabbitMQ consumers must use manual acknowledgements.")
+            .Validate(
+                static options =>
+                    !string.IsNullOrWhiteSpace(
+                        options.ConsumerTagPrefix),
+                "RabbitMQ consumer tag prefix is required.")
             .ValidateOnStart();
 
        services
