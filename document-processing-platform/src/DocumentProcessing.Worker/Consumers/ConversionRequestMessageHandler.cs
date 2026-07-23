@@ -3,6 +3,7 @@ using DocumentProcessing.Contracts.Messages;
 using DocumentProcessing.Core.Abstractions;
 using DocumentProcessing.Core.Models;
 using DocumentProcessing.Messaging.RabbitMq.Serialization;
+using DocumentProcessing.Worker.Consumers.Retry;
 
 namespace DocumentProcessing.Worker.Consumers;
 
@@ -13,21 +14,29 @@ internal sealed class ConversionRequestMessageHandler :
     private readonly IConversionOrchestrator _orchestrator;
     private readonly IMessagePublisher _publisher;
     private readonly ILogger<ConversionRequestMessageHandler> _logger;
+    private readonly IMessageRetryScheduler _retryScheduler;
+    private readonly IRetryDelayProvider _retryDelayProvider;
 
     public ConversionRequestMessageHandler(
-        IMessageSerializer messageSerializer,
-        IConversionOrchestrator orchestrator,
-        IMessagePublisher publisher,
-        ILogger<ConversionRequestMessageHandler> logger)
+    IMessageSerializer messageSerializer,
+    IConversionOrchestrator orchestrator,
+    IMessagePublisher publisher,
+    IMessageRetryScheduler retryScheduler,
+    IRetryDelayProvider retryDelayProvider,
+    ILogger<ConversionRequestMessageHandler> logger)
     {
         ArgumentNullException.ThrowIfNull(messageSerializer);
         ArgumentNullException.ThrowIfNull(orchestrator);
         ArgumentNullException.ThrowIfNull(publisher);
+        ArgumentNullException.ThrowIfNull(retryScheduler);
+        ArgumentNullException.ThrowIfNull(retryDelayProvider);
         ArgumentNullException.ThrowIfNull(logger);
 
         _messageSerializer = messageSerializer;
         _orchestrator = orchestrator;
         _publisher = publisher;
+        _retryScheduler = retryScheduler;
+        _retryDelayProvider = retryDelayProvider;
         _logger = logger;
     }
 
@@ -150,25 +159,78 @@ internal sealed class ConversionRequestMessageHandler :
 
         if (result.Retryable)
         {
+            if (_retryDelayProvider.TryGetNextDelay(
+                    envelope.Attempt,
+                    out TimeSpan retryDelay))
+            {
+                /*
+                 * Yeni retry mesajı broker tarafından confirm edilmeden
+                 * bu çağrı tamamlanmaz.
+                 */
+                await _retryScheduler
+                    .ScheduleRetryAsync(
+                        envelope,
+                        retryDelay,
+                        cancellationToken)
+                    .ConfigureAwait(false);
+
+                _logger.LogWarning(
+                    "Conversion failed with a retryable error. " +
+                    "A delayed retry was scheduled. " +
+                    "ErrorCode: {ErrorCode}, " +
+                    "FailedStage: {FailedStage}, " +
+                    "CurrentAttempt: {CurrentAttempt}, " +
+                    "NextAttempt: {NextAttempt}, " +
+                    "RetryDelay: {RetryDelay}",
+                    result.ErrorCode,
+                    result.FailedStage,
+                    envelope.Attempt,
+                    envelope.Attempt + 1,
+                    retryDelay);
+
+                /*
+                 * Acknowledge burada conversion başarılı demek değildir.
+                 *
+                 * Eski fiziksel request mesajı artık güvenle
+                 * silinebilir demektir; çünkü yeni retry mesajı broker
+                 * tarafından confirm edilmiştir.
+                 */
+                return ConsumerMessageHandlingResult.Acknowledge(
+                    $"Retry attempt {envelope.Attempt + 1} was " +
+                    $"scheduled after {retryDelay}.");
+            }
+
             /*
-             * Retryable failure için şimdilik Failed eventi
-             * yayınlamıyoruz.
-             *
-             * ConversionFailed eventini terminal sonuç olarak
-             * kullanacağız. Bir sonraki committe mesaj retry
-             * exchange'e yayınlanacak.
+             * Retryable hata olsa bile maksimum attempt sayısı
+             * tamamlandı. Artık terminal failure oluşturuyoruz.
              */
-            _logger.LogWarning(
-                "Conversion failed with a retryable error. " +
+            ConversionFailed exhaustedFailure =
+                CreateFailedMessage(
+                    message,
+                    correlationId,
+                    envelope.Attempt,
+                    result);
+
+            await _publisher
+                .PublishAsync(
+                    exhaustedFailure,
+                    resultPublishContext,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            _logger.LogError(
+                "Conversion retry attempts were exhausted. " +
                 "ErrorCode: {ErrorCode}, " +
                 "FailedStage: {FailedStage}, " +
-                "Attempt: {Attempt}",
+                "Attempt: {Attempt}, " +
+                "MaximumAttempts: {MaximumAttempts}",
                 result.ErrorCode,
                 result.FailedStage,
-                envelope.Attempt);
+                envelope.Attempt,
+                _retryDelayProvider.MaximumAttempts);
 
-            return ConsumerMessageHandlingResult.Requeue(
-                "Conversion provider returned a retryable failure.");
+            return ConsumerMessageHandlingResult.DeadLetter(
+                "Maximum conversion retry attempts were exhausted.");
         }
 
         ConversionFailed failed =

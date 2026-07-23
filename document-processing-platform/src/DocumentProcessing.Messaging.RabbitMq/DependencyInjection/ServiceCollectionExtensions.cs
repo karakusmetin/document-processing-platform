@@ -5,6 +5,7 @@ using DocumentProcessing.Messaging.RabbitMq.Connection;
 using DocumentProcessing.Messaging.RabbitMq.Publishing;
 using DocumentProcessing.Messaging.RabbitMq.Serialization;
 using DocumentProcessing.Messaging.RabbitMq.Topology;
+using DocumentProcessing.Messaging.RabbitMq.Retrying;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -32,6 +33,8 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IRabbitMqPublisher,RabbitMqPublisher>();
 
         services.AddSingleton<IMessagePublisher,RabbitMqMessagePublisher>();
+
+        services.AddSingleton<IMessageRetryScheduler,RabbitMqMessageRetryScheduler>();
 
         return services;
     }

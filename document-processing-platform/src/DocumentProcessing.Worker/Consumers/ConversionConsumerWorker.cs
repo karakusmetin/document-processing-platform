@@ -318,26 +318,6 @@ internal sealed class ConversionConsumerWorker : BackgroundService
 
                 break;
 
-            case ConsumerMessageDisposition.Requeue:
-                await channel
-                    .BasicNackAsync(
-                        deliveryTag:
-                            deliveryTag,
-                        multiple: false,
-                        requeue: true,
-                        cancellationToken:
-                            CancellationToken.None)
-                    .ConfigureAwait(false);
-
-                _logger.LogWarning(
-                    "RabbitMQ message requeued. " +
-                    "DeliveryTag: {DeliveryTag}, " +
-                    "Reason: {Reason}",
-                    deliveryTag,
-                    result.Reason);
-
-                break;
-
             case ConsumerMessageDisposition.DeadLetter:
                 await channel
                     .BasicNackAsync(

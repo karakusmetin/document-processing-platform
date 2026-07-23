@@ -12,14 +12,6 @@ internal sealed record ConsumerMessageHandlingResult(
             reason);
     }
 
-    public static ConsumerMessageHandlingResult Requeue(
-        string reason)
-    {
-        return new ConsumerMessageHandlingResult(
-            ConsumerMessageDisposition.Requeue,
-            reason);
-    }
-
     public static ConsumerMessageHandlingResult DeadLetter(
         string reason)
     {
