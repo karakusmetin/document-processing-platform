@@ -73,9 +73,9 @@ internal sealed class RabbitMqTopologyInitializer :
                     .ConfigureAwait(false);
 
             await DeclareExchangesAsync(
-                    channel,
-                    cancellationToken)
-                .ConfigureAwait(false);
+        channel,
+        cancellationToken)
+    .ConfigureAwait(false);
 
             await DeclareDeadLetterQueueAsync(
                     channel,
@@ -83,6 +83,11 @@ internal sealed class RabbitMqTopologyInitializer :
                 .ConfigureAwait(false);
 
             await DeclareConversionRequestQueueAsync(
+                    channel,
+                    cancellationToken)
+                .ConfigureAwait(false);
+
+            await DeclareConversionResultQueueAsync(
                     channel,
                     cancellationToken)
                 .ConfigureAwait(false);
@@ -367,5 +372,54 @@ internal sealed class RabbitMqTopologyInitializer :
         return arguments.Count == 0
             ? null
             : arguments;
+    }
+
+    private async Task DeclareConversionResultQueueAsync(
+    IChannel channel,
+    CancellationToken cancellationToken)
+    {
+        Dictionary<string, object?> arguments =
+            CreateQueueTypeArguments();
+
+        await DeclareQueueAsync(
+                channel,
+                _topologyOptions.ConversionResultQueue,
+                NullWhenEmpty(arguments),
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        await channel
+            .QueueBindAsync(
+                queue:
+                    _topologyOptions.ConversionResultQueue,
+                exchange:
+                    _topologyOptions.EventExchange,
+                routingKey:
+                    _topologyOptions
+                        .ConversionCompletedRoutingKey,
+                arguments: null,
+                noWait: false,
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        await channel
+            .QueueBindAsync(
+                queue:
+                    _topologyOptions.ConversionResultQueue,
+                exchange:
+                    _topologyOptions.EventExchange,
+                routingKey:
+                    _topologyOptions
+                        .ConversionFailedRoutingKey,
+                arguments: null,
+                noWait: false,
+                cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+
+        _logger.LogDebug(
+            "RabbitMQ conversion result queue declared and bound. " +
+            "Queue: {Queue}, EventExchange: {EventExchange}",
+            _topologyOptions.ConversionResultQueue,
+            _topologyOptions.EventExchange);
     }
 }

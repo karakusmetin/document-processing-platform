@@ -161,6 +161,8 @@ internal static class RabbitMqOptionsRegistration
                     !string.IsNullOrWhiteSpace(
                         options.RetryQueuePrefix) &&
                     !string.IsNullOrWhiteSpace(
+                        options.ConversionResultQueue) &&
+                    !string.IsNullOrWhiteSpace(
                         options.RetryRoutingKeyPrefix),
                 "RabbitMQ topology names cannot be empty.")
             .Validate(

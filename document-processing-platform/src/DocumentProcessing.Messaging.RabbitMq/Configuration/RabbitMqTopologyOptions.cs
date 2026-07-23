@@ -28,5 +28,7 @@ public sealed class RabbitMqTopologyOptions
 
     public string RetryRoutingKeyPrefix { get; set; } = string.Empty;
 
+    public string ConversionResultQueue { get; set; } = string.Empty;
+    
     public RabbitMqQueueType QueueType { get; set; } = RabbitMqQueueType.Classic;
 }
