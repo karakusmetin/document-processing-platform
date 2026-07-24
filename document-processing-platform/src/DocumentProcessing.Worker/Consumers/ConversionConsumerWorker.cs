@@ -217,43 +217,40 @@ internal sealed class ConversionConsumerWorker : BackgroundService
                     .ConfigureAwait(false);
 
             await ApplyDispositionAsync(
-                    channel,
-                    eventArgs.DeliveryTag,
-                    result)
-                .ConfigureAwait(false);
+                        channel,
+                        eventArgs,
+                        body,
+                        result)
+                    .ConfigureAwait(false);
         }
         catch (MessageSerializationException exception)
         {
-            _logger.LogError(
-                exception,
-                "RabbitMQ message could not be deserialized. " +
-                "The message will be dead-lettered. " +
-                "DeliveryTag: {DeliveryTag}, " +
-                "Exchange: {Exchange}, " +
-                "RoutingKey: {RoutingKey}",
-                eventArgs.DeliveryTag,
-                eventArgs.Exchange,
-                eventArgs.RoutingKey);
+            string diagnosticId =
+                Guid.NewGuid().ToString("N");
 
-            await TryNackAsync(
+            await DeadLetterMessageAsync(
                     channel,
-                    eventArgs.DeliveryTag,
-                    requeue: false)
+                    eventArgs,
+                    body,
+                    ConsumerFailureKind.MalformedMessage,
+                    "RabbitMQ message body could not be deserialized.",
+                    diagnosticId,
+                    exception)
                 .ConfigureAwait(false);
         }
         catch (InvalidMessageEnvelopeException exception)
         {
-            _logger.LogError(
-                exception,
-                "RabbitMQ message envelope is invalid. " +
-                "The message will be dead-lettered. " +
-                "DeliveryTag: {DeliveryTag}",
-                eventArgs.DeliveryTag);
+            string diagnosticId =
+                Guid.NewGuid().ToString("N");
 
-            await TryNackAsync(
+            await DeadLetterMessageAsync(
                     channel,
-                    eventArgs.DeliveryTag,
-                    requeue: false)
+                    eventArgs,
+                    body,
+                    exception.FailureKind,
+                    exception.Message,
+                    diagnosticId,
+                    exception)
                 .ConfigureAwait(false);
         }
         catch (OperationCanceledException)
@@ -293,9 +290,10 @@ internal sealed class ConversionConsumerWorker : BackgroundService
     }
 
     private async Task ApplyDispositionAsync(
-        IChannel channel,
-        ulong deliveryTag,
-        ConsumerMessageHandlingResult result)
+    IChannel channel,
+    BasicDeliverEventArgs eventArgs,
+    ReadOnlyMemory<byte> body,
+    ConsumerMessageHandlingResult result)
     {
         switch (result.Disposition)
         {
@@ -303,7 +301,7 @@ internal sealed class ConversionConsumerWorker : BackgroundService
                 await channel
                     .BasicAckAsync(
                         deliveryTag:
-                            deliveryTag,
+                            eventArgs.DeliveryTag,
                         multiple: false,
                         cancellationToken:
                             CancellationToken.None)
@@ -313,28 +311,21 @@ internal sealed class ConversionConsumerWorker : BackgroundService
                     "RabbitMQ message acknowledged. " +
                     "DeliveryTag: {DeliveryTag}, " +
                     "Reason: {Reason}",
-                    deliveryTag,
+                    eventArgs.DeliveryTag,
                     result.Reason);
 
                 break;
 
             case ConsumerMessageDisposition.DeadLetter:
-                await channel
-                    .BasicNackAsync(
-                        deliveryTag:
-                            deliveryTag,
-                        multiple: false,
-                        requeue: false,
-                        cancellationToken:
-                            CancellationToken.None)
+                await DeadLetterMessageAsync(
+                        channel,
+                        eventArgs,
+                        body,
+                        result.FailureKind,
+                        result.Reason,
+                        result.DiagnosticId ??
+                        Guid.NewGuid().ToString("N"))
                     .ConfigureAwait(false);
-
-                _logger.LogWarning(
-                    "RabbitMQ message dead-lettered. " +
-                    "DeliveryTag: {DeliveryTag}, " +
-                    "Reason: {Reason}",
-                    deliveryTag,
-                    result.Reason);
 
                 break;
 
@@ -523,5 +514,90 @@ internal sealed class ConversionConsumerWorker : BackgroundService
 
         return
             $"{prefix}.{Guid.NewGuid():N}";
+    }
+
+    private async Task DeadLetterMessageAsync(
+    IChannel channel,
+    BasicDeliverEventArgs eventArgs,
+    ReadOnlyMemory<byte> body,
+    ConsumerFailureKind failureKind,
+    string reason,
+    string diagnosticId,
+    Exception? exception = null)
+    {
+        string bodySha256 =
+            MessageBodyFingerprint.ComputeSha256(
+                body.Span);
+
+        string? messageId =
+            eventArgs.BasicProperties.MessageId;
+
+        string? correlationId =
+            eventArgs.BasicProperties.CorrelationId;
+
+        string? messageType =
+            eventArgs.BasicProperties.Type;
+
+        if (exception is null)
+        {
+            _logger.LogError(
+                "RabbitMQ message will be dead-lettered. " +
+                "FailureKind: {FailureKind}, " +
+                "Reason: {Reason}, " +
+                "DiagnosticId: {DiagnosticId}, " +
+                "BodySha256: {BodySha256}, " +
+                "MessageId: {MessageId}, " +
+                "CorrelationId: {CorrelationId}, " +
+                "MessageType: {MessageType}, " +
+                "Exchange: {Exchange}, " +
+                "RoutingKey: {RoutingKey}, " +
+                "Redelivered: {Redelivered}, " +
+                "DeliveryTag: {DeliveryTag}",
+                failureKind,
+                reason,
+                diagnosticId,
+                bodySha256,
+                messageId,
+                correlationId,
+                messageType,
+                eventArgs.Exchange,
+                eventArgs.RoutingKey,
+                eventArgs.Redelivered,
+                eventArgs.DeliveryTag);
+        }
+        else
+        {
+            _logger.LogError(
+                exception,
+                "RabbitMQ message will be dead-lettered. " +
+                "FailureKind: {FailureKind}, " +
+                "Reason: {Reason}, " +
+                "DiagnosticId: {DiagnosticId}, " +
+                "BodySha256: {BodySha256}, " +
+                "MessageId: {MessageId}, " +
+                "CorrelationId: {CorrelationId}, " +
+                "MessageType: {MessageType}, " +
+                "Exchange: {Exchange}, " +
+                "RoutingKey: {RoutingKey}, " +
+                "Redelivered: {Redelivered}, " +
+                "DeliveryTag: {DeliveryTag}",
+                failureKind,
+                reason,
+                diagnosticId,
+                bodySha256,
+                messageId,
+                correlationId,
+                messageType,
+                eventArgs.Exchange,
+                eventArgs.RoutingKey,
+                eventArgs.Redelivered,
+                eventArgs.DeliveryTag);
+        }
+
+        await TryNackAsync(
+                channel,
+                eventArgs.DeliveryTag,
+                requeue: false)
+            .ConfigureAwait(false);
     }
 }
