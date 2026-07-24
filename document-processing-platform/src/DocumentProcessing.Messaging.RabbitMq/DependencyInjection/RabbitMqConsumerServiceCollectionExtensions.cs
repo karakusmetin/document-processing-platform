@@ -49,15 +49,12 @@ public static class RabbitMqConsumerServiceCollectionExtensions
          * Handler mesaj başına oluşturulacak scope içinden
          * resolve edilir.
          */
-        services.AddScoped<
-            IRabbitMqMessageHandler<TMessage>,
-            THandler>();
+        services.AddScoped<IRabbitMqMessageHandler<TMessage>,THandler>();
 
         /*
          * Her TMessage için ayrı hosted service oluşturulur.
          */
-        services.AddSingleton<IHostedService,
-            RabbitMqConsumerHostedService<TMessage>>();
+        services.AddSingleton<IHostedService,RabbitMqConsumerHostedService<TMessage>>();
 
         return services;
     }

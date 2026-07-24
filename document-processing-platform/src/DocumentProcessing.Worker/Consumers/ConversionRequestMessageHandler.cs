@@ -1,38 +1,33 @@
-﻿using DocumentProcessing.Contracts.Messaging;
-using DocumentProcessing.Contracts.Messages;
+﻿using DocumentProcessing.Contracts.Messages;
+using DocumentProcessing.Contracts.Messaging;
 using DocumentProcessing.Core.Abstractions;
 using DocumentProcessing.Core.Models;
-using DocumentProcessing.Messaging.RabbitMq.Serialization;
+using DocumentProcessing.Messaging.RabbitMq.Consuming;
 using DocumentProcessing.Worker.Consumers.Retry;
 
 namespace DocumentProcessing.Worker.Consumers;
 
-internal sealed class ConversionRequestMessageHandler :
-    IConversionRequestMessageHandler
+internal sealed class ConversionRequestMessageHandler : IRabbitMqMessageHandler<ConversionRequested>
 {
-    private readonly IMessageSerializer _messageSerializer;
     private readonly IConversionOrchestrator _orchestrator;
     private readonly IMessagePublisher _publisher;
-    private readonly ILogger<ConversionRequestMessageHandler> _logger;
     private readonly IMessageRetryScheduler _retryScheduler;
     private readonly IRetryDelayProvider _retryDelayProvider;
+    private readonly ILogger<ConversionRequestMessageHandler> _logger;
 
     public ConversionRequestMessageHandler(
-    IMessageSerializer messageSerializer,
     IConversionOrchestrator orchestrator,
     IMessagePublisher publisher,
     IMessageRetryScheduler retryScheduler,
     IRetryDelayProvider retryDelayProvider,
     ILogger<ConversionRequestMessageHandler> logger)
     {
-        ArgumentNullException.ThrowIfNull(messageSerializer);
         ArgumentNullException.ThrowIfNull(orchestrator);
         ArgumentNullException.ThrowIfNull(publisher);
         ArgumentNullException.ThrowIfNull(retryScheduler);
         ArgumentNullException.ThrowIfNull(retryDelayProvider);
         ArgumentNullException.ThrowIfNull(logger);
 
-        _messageSerializer = messageSerializer;
         _orchestrator = orchestrator;
         _publisher = publisher;
         _retryScheduler = retryScheduler;
@@ -40,35 +35,68 @@ internal sealed class ConversionRequestMessageHandler :
         _logger = logger;
     }
 
-    public async Task<ConsumerMessageHandlingResult> HandleAsync(
-     ConversionRequestDelivery delivery,
-     CancellationToken cancellationToken)
+    public async Task<RabbitMqMessageHandlingResult> HandleAsync(
+        MessageEnvelope<ConversionRequested> envelope,
+        RabbitMqDeliveryContext delivery,
+        CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(envelope);
         ArgumentNullException.ThrowIfNull(delivery);
-
-        MessageEnvelope<ConversionRequested> envelope =
-            _messageSerializer.Deserialize<ConversionRequested>(
-                delivery.Body);
-
-        ValidateEnvelope(envelope);
 
         ConversionRequested message =
             envelope.Payload;
 
-        string correlationId =
-            ResolveCorrelationId(
+        if (!TryValidateRequest(
                 envelope,
-                message);
+                message,
+                out string correlationId,
+                out string validationFailureReason))
+        {
+            string diagnosticId =
+                Guid.NewGuid().ToString("N");
+
+            _logger.LogError(
+                "Conversion request validation failed. " +
+                "DiagnosticId: {DiagnosticId}, " +
+                "Reason: {Reason}, " +
+                "MessageId: {MessageId}, " +
+                "Exchange: {Exchange}, " +
+                "RoutingKey: {RoutingKey}",
+                diagnosticId,
+                validationFailureReason,
+                envelope.MessageId,
+                delivery.Exchange,
+                delivery.RoutingKey);
+
+            return RabbitMqMessageHandlingResult.DeadLetter(
+                failureCode:
+                    ConversionFailureCodes.InvalidRequest,
+
+                reason:
+                    validationFailureReason,
+
+                diagnosticId:
+                    diagnosticId);
+        }
 
         using IDisposable? scope =
             _logger.BeginScope(
                 new Dictionary<string, object>
                 {
-                    ["JobId"] = message.JobId,
-                    ["MessageId"] = envelope.MessageId,
-                    ["CorrelationId"] = correlationId,
-                    ["Attempt"] = envelope.Attempt,
-                    ["Redelivered"] = delivery.Redelivered
+                    ["JobId"] =
+                        message.JobId,
+
+                    ["MessageId"] =
+                        envelope.MessageId,
+
+                    ["CorrelationId"] =
+                        correlationId,
+
+                    ["Attempt"] =
+                        envelope.Attempt,
+
+                    ["Redelivered"] =
+                        delivery.Redelivered
                 });
 
         _logger.LogInformation(
@@ -78,13 +106,6 @@ internal sealed class ConversionRequestMessageHandler :
             message.SourceFileName,
             message.Profile);
 
-        /*
-         * Conversion sonucunda yayınlanacak Completed veya Failed
-         * eventinin mesaj bağlamıdır.
-         *
-         * CorrelationId aynı iş akışını korur.
-         * CausationId ise bu eventi oluşturan request mesajını gösterir.
-         */
         MessagePublishContext resultPublishContext =
             new()
             {
@@ -131,22 +152,16 @@ internal sealed class ConversionRequestMessageHandler :
             when (cancellationToken.IsCancellationRequested)
         {
             /*
-             * Servis kapanışı nedeniyle işlem iptal edildiyse
-             * retry üretmiyoruz. Exception üst katmana taşınır.
+             * Servis kapanışı sırasında işlem iptal edilmişse
+             * generic runtime'a geri taşınır.
              *
-             * Consumer channel kapanınca ACK edilmemiş request
-             * RabbitMQ tarafından tekrar queue'ya alınır.
+             * Runtime mesajı ACK/NACK etmez. Channel kapandığında
+             * unacked mesaj yeniden queue'ya döner.
              */
             throw;
         }
         catch (Exception exception)
         {
-            /*
-             * Orchestrator normal bir result dönmek yerine
-             * beklenmeyen exception attı.
-             *
-             * Bu durum da kontrollü delayed retry akışına alınır.
-             */
             return await HandleUnexpectedProcessingFailureAsync(
                     envelope,
                     message,
@@ -157,9 +172,6 @@ internal sealed class ConversionRequestMessageHandler :
                 .ConfigureAwait(false);
         }
 
-        /*
-         * Başarılı conversion.
-         */
         if (result.IsSuccess)
         {
             ConversionCompleted completed =
@@ -169,8 +181,7 @@ internal sealed class ConversionRequestMessageHandler :
                     result);
 
             /*
-             * Completed eventi broker tarafından confirm edilmeden
-             * request başarılı kabul edilmez.
+             * Event publisher confirm almadan bu çağrı tamamlanmaz.
              */
             await _publisher
                 .PublishAsync(
@@ -186,27 +197,22 @@ internal sealed class ConversionRequestMessageHandler :
                 result.Provider,
                 result.OutputReference);
 
-            return ConsumerMessageHandlingResult.Acknowledge(
+            /*
+             * Generic runtime bu sonucu alınca request mesajını ACK eder.
+             */
+            return RabbitMqMessageHandlingResult.Acknowledge(
                 "Conversion completed and result event was confirmed.");
         }
 
-        /*
-         * Provider hatayı retryable olarak sınıflandırdı.
-         */
         if (result.Retryable)
         {
-            /*
-             * Mevcut attempt için tanımlı bir sonraki retry
-             * süresi varsa yeni retry mesajı oluşturulur.
-             */
             if (_retryDelayProvider.TryGetNextDelay(
                     envelope.Attempt,
                     out TimeSpan retryDelay))
             {
                 /*
-                 * Yeni retry envelope'u retry exchange'e yayınlanır.
-                 *
-                 * Bu metot publisher confirm alınmadan tamamlanmaz.
+                 * Yeni retry envelope'u yayınlanır ve broker confirm
+                 * alındıktan sonra metot tamamlanır.
                  */
                 await _retryScheduler
                     .ScheduleRetryAsync(
@@ -230,23 +236,16 @@ internal sealed class ConversionRequestMessageHandler :
                     retryDelay);
 
                 /*
-                 * Acknowledge conversion başarılı anlamına gelmiyor.
+                 * Generic runtime eski fiziksel request mesajını ACK eder.
                  *
-                 * Yeni retry mesajı RabbitMQ tarafından confirm
-                 * edildiği için eski fiziksel request artık
-                 * queue'dan silinebilir anlamına geliyor.
+                 * Bu ACK conversion başarılı demek değildir.
+                 * Retry mesajının güvenle broker'a taşındığı anlamına gelir.
                  */
-                return ConsumerMessageHandlingResult.Acknowledge(
+                return RabbitMqMessageHandlingResult.Acknowledge(
                     $"Retry attempt {envelope.Attempt + 1} was " +
                     $"scheduled after {retryDelay}.");
             }
 
-            /*
-             * Hata retryable fakat kullanılabilecek retry süresi
-             * kalmadı. MaximumAttempts tamamlandı.
-             *
-             * Artık terminal ConversionFailed eventi oluşturulur.
-             */
             string diagnosticId =
                 Guid.NewGuid().ToString("N");
 
@@ -278,18 +277,20 @@ internal sealed class ConversionRequestMessageHandler :
                 envelope.Attempt,
                 _retryDelayProvider.MaximumAttempts);
 
-            return ConsumerMessageHandlingResult.DeadLetter(
-                ConsumerFailureKind.RetryAttemptsExhausted,
-                "Maximum conversion retry attempts were exhausted.",
-                diagnosticId);
+            /*
+             * Generic runtime NACK/requeue:false uygulayacak.
+             */
+            return RabbitMqMessageHandlingResult.DeadLetter(
+                failureCode:
+                    ConversionFailureCodes.RetryAttemptsExhausted,
+
+                reason:
+                    "Maximum conversion retry attempts were exhausted.",
+
+                diagnosticId:
+                    diagnosticId);
         }
 
-        /*
-         * Provider Retryable=false döndürdü.
-         *
-         * Bu hata geçici değildir. Retry queue'ya gönderilmeden
-         * doğrudan terminal ConversionFailed eventi oluşturulur.
-         */
         string permanentFailureDiagnosticId =
             Guid.NewGuid().ToString("N");
 
@@ -301,10 +302,6 @@ internal sealed class ConversionRequestMessageHandler :
                 result,
                 permanentFailureDiagnosticId);
 
-        /*
-         * Failed eventi broker tarafından confirm edildikten sonra
-         * request mesajı DLQ'ya gönderilebilir.
-         */
         await _publisher
             .PublishAsync(
                 failed,
@@ -323,10 +320,15 @@ internal sealed class ConversionRequestMessageHandler :
             result.FailedStage,
             envelope.Attempt);
 
-        return ConsumerMessageHandlingResult.DeadLetter(
-            ConsumerFailureKind.PermanentConversionFailure,
-            "Conversion provider returned a permanent failure.",
-            permanentFailureDiagnosticId);
+        return RabbitMqMessageHandlingResult.DeadLetter(
+            failureCode:
+                ConversionFailureCodes.PermanentFailure,
+
+            reason:
+                "Conversion provider returned a permanent failure.",
+
+            diagnosticId:
+                permanentFailureDiagnosticId);
     }
 
     private static ConversionCompleted CreateCompletedMessage(
@@ -362,7 +364,7 @@ internal sealed class ConversionRequestMessageHandler :
         };
     }
 
-    private async Task<ConsumerMessageHandlingResult>
+    private async Task<RabbitMqMessageHandlingResult>
     HandleUnexpectedProcessingFailureAsync(
         MessageEnvelope<ConversionRequested> envelope,
         ConversionRequested message,
@@ -374,9 +376,6 @@ internal sealed class ConversionRequestMessageHandler :
         string diagnosticId =
             Guid.NewGuid().ToString("N");
 
-        /*
-         * Exception oluştu ama hâlâ retry hakkı var.
-         */
         if (_retryDelayProvider.TryGetNextDelay(
                 envelope.Attempt,
                 out TimeSpan retryDelay))
@@ -394,10 +393,6 @@ internal sealed class ConversionRequestMessageHandler :
                 envelope.Attempt + 1,
                 retryDelay);
 
-            /*
-             * Aynı payload yeni MessageId ve artmış Attempt ile
-             * retry exchange'e yayınlanır.
-             */
             await _retryScheduler
                 .ScheduleRetryAsync(
                     envelope,
@@ -405,18 +400,11 @@ internal sealed class ConversionRequestMessageHandler :
                     cancellationToken)
                 .ConfigureAwait(false);
 
-            return ConsumerMessageHandlingResult.Acknowledge(
+            return RabbitMqMessageHandlingResult.Acknowledge(
                 $"Unexpected processing failure retry attempt " +
                 $"{envelope.Attempt + 1} was scheduled.");
         }
 
-        /*
-         * Beklenmeyen exception oluştu ve retry hakkı kalmadı.
-         *
-         * Bu durumda result nesnesi bulunmadığı için
-         * CreateFailedMessage kullanamayız. ConversionFailed
-         * mesajını burada doğrudan oluşturuyoruz.
-         */
         ConversionFailed failed =
             new()
             {
@@ -429,10 +417,6 @@ internal sealed class ConversionRequestMessageHandler :
                 ErrorCode =
                     "UNEXPECTED_PROCESSING_ERROR",
 
-                /*
-                 * Exception.Message dış sisteme gönderilmiyor.
-                 * Teknik detay yalnızca logda tutuluyor.
-                 */
                 Message =
                     "An unexpected error occurred while processing " +
                     "the conversion request.",
@@ -467,10 +451,16 @@ internal sealed class ConversionRequestMessageHandler :
             envelope.Attempt,
             _retryDelayProvider.MaximumAttempts);
 
-        return ConsumerMessageHandlingResult.DeadLetter(
-            ConsumerFailureKind.RetryAttemptsExhausted,
-            "Unexpected processing error exhausted all retry attempts.",
-            diagnosticId);
+        return RabbitMqMessageHandlingResult.DeadLetter(
+            failureCode:
+                ConversionFailureCodes
+                    .UnexpectedFailureAttemptsExhausted,
+
+            reason:
+                "Unexpected processing error exhausted all retry attempts.",
+
+            diagnosticId:
+                diagnosticId);
     }
 
     private static ConversionFailed CreateFailedMessage(
@@ -517,113 +507,82 @@ internal sealed class ConversionRequestMessageHandler :
         };
     }
 
-    private static string ResolveCorrelationId(
-        MessageEnvelope<ConversionRequested> envelope,
-        ConversionRequested message)
+    private static bool TryValidateRequest(
+    MessageEnvelope<ConversionRequested> envelope,
+    ConversionRequested message,
+    out string correlationId,
+    out string failureReason)
     {
-        string? correlationId =
-            !string.IsNullOrWhiteSpace(
-                envelope.CorrelationId)
-                ? envelope.CorrelationId
-                : message.CorrelationId;
+        correlationId = string.Empty;
+        failureReason = string.Empty;
+
+        if (message.JobId == Guid.Empty)
+        {
+            failureReason =
+                "ConversionRequested JobId cannot be empty.";
+
+            return false;
+        }
+
+        string? envelopeCorrelationId =
+            envelope.CorrelationId;
+
+        string? payloadCorrelationId =
+            message.CorrelationId;
+
+        if (!string.IsNullOrWhiteSpace(envelopeCorrelationId) &&
+            !string.IsNullOrWhiteSpace(payloadCorrelationId) &&
+            !string.Equals(
+                envelopeCorrelationId,
+                payloadCorrelationId,
+                StringComparison.Ordinal))
+        {
+            failureReason =
+                "Envelope and payload correlation IDs do not match.";
+
+            return false;
+        }
+
+        correlationId =
+            !string.IsNullOrWhiteSpace(envelopeCorrelationId)
+                ? envelopeCorrelationId
+                : payloadCorrelationId;
 
         if (string.IsNullOrWhiteSpace(correlationId))
         {
-            throw new InvalidMessageEnvelopeException(
-                ConsumerFailureKind.InvalidEnvelope,
-                "ConversionRequested correlation ID is required.");
-        }
+            failureReason =
+                "ConversionRequested correlation ID is required.";
 
-        return correlationId;
-    }
-
-    private static void ValidateEnvelope(
-    MessageEnvelope<ConversionRequested> envelope)
-    {
-        ArgumentNullException.ThrowIfNull(envelope);
-
-        if (envelope.MessageId == Guid.Empty)
-        {
-            throw new InvalidMessageEnvelopeException(
-                ConsumerFailureKind.InvalidEnvelope,
-                "MessageId cannot be empty.");
-        }
-
-        if (!string.Equals(
-                envelope.MessageType,
-                ConversionMessageTypes.ConversionRequested,
-                StringComparison.Ordinal))
-        {
-            throw new InvalidMessageEnvelopeException(
-                ConsumerFailureKind.UnsupportedMessageType,
-                $"Unexpected RabbitMQ message type. " +
-                $"Expected: " +
-                $"'{ConversionMessageTypes.ConversionRequested}', " +
-                $"Actual: '{envelope.MessageType}'.");
-        }
-
-        if (!string.Equals(
-                envelope.MessageVersion,
-                ConversionMessageVersions.V1,
-                StringComparison.Ordinal))
-        {
-            throw new InvalidMessageEnvelopeException(
-                ConsumerFailureKind.UnsupportedMessageVersion,
-                $"Unsupported ConversionRequested message version. " +
-                $"Expected: '{ConversionMessageVersions.V1}', " +
-                $"Actual: '{envelope.MessageVersion}'.");
-        }
-
-        if (envelope.Attempt < 1)
-        {
-            throw new InvalidMessageEnvelopeException(
-                ConsumerFailureKind.InvalidEnvelope,
-                $"Message attempt must be greater than zero. " +
-                $"Actual: {envelope.Attempt}.");
-        }
-
-        if (envelope.Payload is null)
-        {
-            throw new InvalidMessageEnvelopeException(
-                ConsumerFailureKind.InvalidEnvelope,
-                "ConversionRequested payload cannot be null.");
-        }
-
-        ValidatePayload(envelope.Payload);
-    }
-
-    private static void ValidatePayload(
-    ConversionRequested message)
-    {
-        if (message.JobId == Guid.Empty)
-        {
-            throw new InvalidMessageEnvelopeException(
-                ConsumerFailureKind.InvalidEnvelope,
-                "ConversionRequested JobId cannot be empty.");
+            return false;
         }
 
         if (string.IsNullOrWhiteSpace(
                 message.SourceReference))
         {
-            throw new InvalidMessageEnvelopeException(
-                ConsumerFailureKind.InvalidEnvelope,
-                "ConversionRequested SourceReference is required.");
+            failureReason =
+                "ConversionRequested SourceReference is required.";
+
+            return false;
         }
 
         if (string.IsNullOrWhiteSpace(
                 message.SourceFileName))
         {
-            throw new InvalidMessageEnvelopeException(
-                ConsumerFailureKind.InvalidEnvelope,
-                "ConversionRequested SourceFileName is required.");
+            failureReason =
+                "ConversionRequested SourceFileName is required.";
+
+            return false;
         }
 
         if (string.IsNullOrWhiteSpace(
                 message.Profile))
         {
-            throw new InvalidMessageEnvelopeException(
-                ConsumerFailureKind.InvalidEnvelope,
-                "ConversionRequested Profile is required.");
+            failureReason =
+                "ConversionRequested Profile is required.";
+
+            return false;
         }
+
+        return true;
     }
 }
