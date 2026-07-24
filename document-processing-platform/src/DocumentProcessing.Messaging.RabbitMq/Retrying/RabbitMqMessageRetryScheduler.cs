@@ -12,26 +12,26 @@ internal sealed class RabbitMqMessageRetryScheduler :
     IMessageRetryScheduler
 {
     private readonly IRabbitMqPublisher _rabbitMqPublisher;
-    private readonly RabbitMqTopologyOptions _topologyOptions;
+    private readonly IRabbitMqMessageRouteResolver _routeResolver;
     private readonly RabbitMqRetryOptions _retryOptions;
     private readonly RabbitMqPublisherOptions _publisherOptions;
     private readonly ILogger<RabbitMqMessageRetryScheduler> _logger;
 
     public RabbitMqMessageRetryScheduler(
-        IRabbitMqPublisher rabbitMqPublisher,
-        IOptions<RabbitMqTopologyOptions> topologyOptions,
-        IOptions<RabbitMqRetryOptions> retryOptions,
-        IOptions<RabbitMqPublisherOptions> publisherOptions,
-        ILogger<RabbitMqMessageRetryScheduler> logger)
+    IRabbitMqPublisher rabbitMqPublisher,
+    IRabbitMqMessageRouteResolver routeResolver,
+    IOptions<RabbitMqRetryOptions> retryOptions,
+    IOptions<RabbitMqPublisherOptions> publisherOptions,
+    ILogger<RabbitMqMessageRetryScheduler> logger)
     {
         ArgumentNullException.ThrowIfNull(rabbitMqPublisher);
-        ArgumentNullException.ThrowIfNull(topologyOptions);
+        ArgumentNullException.ThrowIfNull(routeResolver);
         ArgumentNullException.ThrowIfNull(retryOptions);
         ArgumentNullException.ThrowIfNull(publisherOptions);
         ArgumentNullException.ThrowIfNull(logger);
 
         _rabbitMqPublisher = rabbitMqPublisher;
-        _topologyOptions = topologyOptions.Value;
+        _routeResolver = routeResolver;
         _retryOptions = retryOptions.Value;
         _publisherOptions = publisherOptions.Value;
         _logger = logger;
@@ -95,17 +95,28 @@ internal sealed class RabbitMqMessageRetryScheduler :
                 attempt:
                     nextAttempt);
 
+        RabbitMqMessageRoute route = _routeResolver.Resolve<TMessage>();
+
+        if (string.IsNullOrWhiteSpace(
+                route.RetryExchange) ||
+            string.IsNullOrWhiteSpace(
+                route.RetryRoutingKeyPrefix))
+        {
+            throw new InvalidOperationException(
+                $"RabbitMQ delayed retry is not configured for CLR " +
+                $"message type '{typeof(TMessage).FullName}'.");
+        }
+
         string retryRoutingKey =
-            RabbitMqTopologyNameBuilder
-                .GetRetryRoutingKey(
-                    _topologyOptions
-                        .RetryRoutingKeyPrefix,
-                    delaySeconds);
+            RabbitMqTopologyNameBuilder.GetRetryRoutingKey(
+                route.RetryRoutingKeyPrefix,
+                delaySeconds);
 
         RabbitMqPublishDestination destination =
             new(
                 Exchange:
-                    _topologyOptions.RetryExchange,
+                    route.RetryExchange,
+
                 RoutingKey:
                     retryRoutingKey);
 

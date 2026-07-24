@@ -4,4 +4,6 @@ internal sealed record RabbitMqMessageRoute(
     string Exchange,
     string RoutingKey,
     string MessageType,
-    string MessageVersion);
+    string MessageVersion,
+    string? RetryExchange,
+    string? RetryRoutingKeyPrefix);

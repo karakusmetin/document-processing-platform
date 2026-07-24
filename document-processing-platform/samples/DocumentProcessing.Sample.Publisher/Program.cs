@@ -1,7 +1,9 @@
 using DocumentProcessing.Contracts.Messaging;
 using DocumentProcessing.Contracts.Messages;
 using DocumentProcessing.Core.Abstractions;
+using DocumentProcessing.Messaging.RabbitMq.Configuration;
 using DocumentProcessing.Messaging.RabbitMq.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 
@@ -26,47 +28,97 @@ if (!File.Exists(inputPath))
 HostApplicationBuilder builder =
     Host.CreateApplicationBuilder(args);
 
+IConfigurationSection topologySection =
+    builder.Configuration.GetSection(
+        RabbitMqTopologyOptions.SectionName);
+
+string commandExchange =
+    topologySection[
+        nameof(RabbitMqTopologyOptions.CommandExchange)]
+    ?? throw new InvalidOperationException(
+        "RabbitMQ command exchange is not configured.");
+
+string requestedRoutingKey =
+    topologySection[
+        nameof(
+            RabbitMqTopologyOptions
+                .ConversionRequestedRoutingKey)]
+    ?? throw new InvalidOperationException(
+        "RabbitMQ requested routing key is not configured.");
+
 builder.Services
     .AddRabbitMqMessaging(builder.Configuration)
     .AddRabbitMqTopologyInitialization();
 
-using IHost host = builder.Build();
+builder.Services.AddRabbitMqMessageRoute<
+    ConversionRequested>(
+    route =>
+    {
+        route.Exchange =
+            commandExchange;
+
+        route.RoutingKey =
+            requestedRoutingKey;
+
+        route.MessageType =
+            ConversionMessageTypes.ConversionRequested;
+
+        route.MessageVersion =
+            ConversionMessageVersions.V1;
+    });
+
+using IHost host =
+    builder.Build();
 
 await host.StartAsync();
 
 try
 {
     IMessagePublisher publisher =
-        host.Services.GetRequiredService<IMessagePublisher>();
+        host.Services.GetRequiredService<
+            IMessagePublisher>();
 
-    Guid jobId = Guid.NewGuid();
+    Guid jobId =
+        Guid.NewGuid();
 
     string correlationId =
         Guid.NewGuid().ToString("N");
 
-    ConversionRequested message = new()
-    {
-        JobId = jobId,
-        CorrelationId = correlationId,
-        SourceReference =
-            $"local://{Uri.EscapeDataString(
-                Path.GetFileName(inputPath))}",
-        SourceFileName =
-            Path.GetFileName(inputPath),
-        Profile =
-            "display-copy"
-    };
+    ConversionRequested message =
+        new()
+        {
+            JobId =
+                jobId,
 
-    MessagePublishContext publishContext = new()
-    {
-        CorrelationId = correlationId,
-        Attempt = 1
-    };
+            CorrelationId =
+                correlationId,
 
-    await publisher.PublishAsync(
-        message,
-        publishContext,
-        CancellationToken.None);
+            SourceReference =
+                $"local://{Uri.EscapeDataString(
+                    Path.GetFileName(inputPath))}",
+
+            SourceFileName =
+                Path.GetFileName(inputPath),
+
+            Profile =
+                "display-copy"
+        };
+
+    MessagePublishContext publishContext =
+        new()
+        {
+            CorrelationId =
+                correlationId,
+
+            Attempt = 1
+        };
+
+    await publisher
+        .PublishAsync(
+            message,
+            publishContext,
+            CancellationToken.None)
+        .ConfigureAwait(false);
 
     Console.WriteLine(
         $"Published JobId: {jobId}");
@@ -75,5 +127,7 @@ try
 }
 finally
 {
-    await host.StopAsync();
+    await host
+        .StopAsync()
+        .ConfigureAwait(false);
 }

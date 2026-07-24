@@ -1,72 +1,84 @@
-﻿using DocumentProcessing.Contracts.Messages;
-using DocumentProcessing.Messaging.RabbitMq.Configuration;
-using Microsoft.Extensions.Options;
+﻿namespace DocumentProcessing.Messaging.RabbitMq.Publishing;
 
-namespace DocumentProcessing.Messaging.RabbitMq.Publishing;
-
-internal sealed class RabbitMqMessageRouteResolver : IRabbitMqMessageRouteResolver
+internal sealed class RabbitMqMessageRouteResolver :
+    IRabbitMqMessageRouteResolver
 {
-    private readonly RabbitMqTopologyOptions _topologyOptions;
+    private readonly IReadOnlyDictionary<
+        Type,
+        RabbitMqMessageRoute> _routes;
 
     public RabbitMqMessageRouteResolver(
-        IOptions<RabbitMqTopologyOptions> topologyOptions)
+        IEnumerable<IRabbitMqMessageRouteRegistration>
+            registrations)
     {
-        ArgumentNullException.ThrowIfNull(topologyOptions);
+        ArgumentNullException.ThrowIfNull(registrations);
 
-        _topologyOptions = topologyOptions.Value;
+        IRabbitMqMessageRouteRegistration[] registrationArray =
+            registrations.ToArray();
+
+        ValidateDuplicateRegistrations(
+            registrationArray);
+
+        _routes =
+            registrationArray.ToDictionary(
+                static registration =>
+                    registration.MessageClrType,
+
+                static registration =>
+                    registration.Route);
     }
 
     public RabbitMqMessageRoute Resolve<TMessage>()
     {
-        Type messageType = typeof(TMessage);
+        Type messageClrType =
+            typeof(TMessage);
 
-        if (messageType == typeof(ConversionRequested))
+        if (_routes.TryGetValue(
+                messageClrType,
+                out RabbitMqMessageRoute? route))
         {
-            return new RabbitMqMessageRoute(
-                Exchange:
-                    _topologyOptions.CommandExchange,
-                RoutingKey:
-                    _topologyOptions
-                        .ConversionRequestedRoutingKey,
-                MessageType:
-                    ConversionMessageTypes
-                        .ConversionRequested,
-                MessageVersion:
-                    ConversionMessageVersions.V1);
-        }
-
-        if (messageType == typeof(ConversionCompleted))
-        {
-            return new RabbitMqMessageRoute(
-                Exchange:
-                    _topologyOptions.EventExchange,
-                RoutingKey:
-                    _topologyOptions
-                        .ConversionCompletedRoutingKey,
-                MessageType:
-                    ConversionMessageTypes
-                        .ConversionCompleted,
-                MessageVersion:
-                    ConversionMessageVersions.V1);
-        }
-
-        if (messageType == typeof(ConversionFailed))
-        {
-            return new RabbitMqMessageRoute(
-                Exchange:
-                    _topologyOptions.EventExchange,
-                RoutingKey:
-                    _topologyOptions
-                        .ConversionFailedRoutingKey,
-                MessageType:
-                    ConversionMessageTypes
-                        .ConversionFailed,
-                MessageVersion:
-                    ConversionMessageVersions.V1);
+            return route;
         }
 
         throw new NotSupportedException(
-            $"No RabbitMQ route is registered for message type " +
-            $"'{messageType.FullName}'.");
+            $"No RabbitMQ message route is registered for CLR " +
+            $"message type '{messageClrType.FullName}'. " +
+            $"Register the route with " +
+            $"'AddRabbitMqMessageRoute<{messageClrType.Name}>'.");
+    }
+
+    private static void ValidateDuplicateRegistrations(
+        IEnumerable<IRabbitMqMessageRouteRegistration>
+            registrations)
+    {
+        Type[] duplicateTypes =
+            registrations
+                .GroupBy(
+                    static registration =>
+                        registration.MessageClrType)
+                .Where(
+                    static group =>
+                        group.Count() > 1)
+                .Select(
+                    static group =>
+                        group.Key)
+                .ToArray();
+
+        if (duplicateTypes.Length == 0)
+        {
+            return;
+        }
+
+        string duplicateTypeNames =
+            string.Join(
+                ", ",
+                duplicateTypes.Select(
+                    static type =>
+                        type.FullName ?? type.Name));
+
+        throw new InvalidOperationException(
+            $"Multiple RabbitMQ routes were registered for the " +
+            $"same CLR message type. Duplicate types: " +
+            $"{duplicateTypeNames}.");
     }
 }
