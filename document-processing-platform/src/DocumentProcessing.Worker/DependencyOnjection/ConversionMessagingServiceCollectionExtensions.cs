@@ -1,8 +1,11 @@
 ﻿using DocumentProcessing.Contracts.Messages;
 using DocumentProcessing.Messaging.RabbitMq.Configuration;
 using DocumentProcessing.Messaging.RabbitMq.DependencyInjection;
+using DocumentProcessing.Worker.Configuration;
 using DocumentProcessing.Worker.Consumers;
 using DocumentProcessing.Worker.Consumers.Retry;
+using DocumentProcessing.Worker.Topology;
+using Microsoft.Extensions.Options;
 
 namespace DocumentProcessing.Worker.DependencyInjection;
 
@@ -18,65 +21,186 @@ internal static class
 
         IConfigurationSection topologySection =
             configuration.GetSection(
-                RabbitMqTopologyOptions.SectionName);
+                ConversionRabbitMqTopologyOptions.SectionName);
 
-        string conversionRequestQueue =
-            topologySection[
-                nameof(
-                    RabbitMqTopologyOptions
-                        .ConversionRequestQueue)]
-            ?? throw new InvalidOperationException(
-                "RabbitMQ conversion request queue is not configured.");
+        ConversionRabbitMqTopologyOptions topologyOptions =
+            new()
+            {
+                CommandExchange =
+                    GetRequiredValue(
+                        topologySection,
+                        nameof(
+                            ConversionRabbitMqTopologyOptions
+                                .CommandExchange)),
+
+                EventExchange =
+                    GetRequiredValue(
+                        topologySection,
+                        nameof(
+                            ConversionRabbitMqTopologyOptions
+                                .EventExchange)),
+
+                RetryExchange =
+                    GetRequiredValue(
+                        topologySection,
+                        nameof(
+                            ConversionRabbitMqTopologyOptions
+                                .RetryExchange)),
+
+                DeadLetterExchange =
+                    GetRequiredValue(
+                        topologySection,
+                        nameof(
+                            ConversionRabbitMqTopologyOptions
+                                .DeadLetterExchange)),
+
+                ConversionRequestQueue =
+                    GetRequiredValue(
+                        topologySection,
+                        nameof(
+                            ConversionRabbitMqTopologyOptions
+                                .ConversionRequestQueue)),
+
+                ConversionResultQueue =
+                    GetRequiredValue(
+                        topologySection,
+                        nameof(
+                            ConversionRabbitMqTopologyOptions
+                                .ConversionResultQueue)),
+
+                ConversionDeadLetterQueue =
+                    GetRequiredValue(
+                        topologySection,
+                        nameof(
+                            ConversionRabbitMqTopologyOptions
+                                .ConversionDeadLetterQueue)),
+
+                ConversionRequestedRoutingKey =
+                    GetRequiredValue(
+                        topologySection,
+                        nameof(
+                            ConversionRabbitMqTopologyOptions
+                                .ConversionRequestedRoutingKey)),
+
+                ConversionCompletedRoutingKey =
+                    GetRequiredValue(
+                        topologySection,
+                        nameof(
+                            ConversionRabbitMqTopologyOptions
+                                .ConversionCompletedRoutingKey)),
+
+                ConversionFailedRoutingKey =
+                    GetRequiredValue(
+                        topologySection,
+                        nameof(
+                            ConversionRabbitMqTopologyOptions
+                                .ConversionFailedRoutingKey)),
+
+                ConversionDeadLetterRoutingKey =
+                    GetRequiredValue(
+                        topologySection,
+                        nameof(
+                            ConversionRabbitMqTopologyOptions
+                                .ConversionDeadLetterRoutingKey)),
+
+                RetryQueuePrefix =
+                    GetRequiredValue(
+                        topologySection,
+                        nameof(
+                            ConversionRabbitMqTopologyOptions
+                                .RetryQueuePrefix)),
+
+                RetryRoutingKeyPrefix =
+                    GetRequiredValue(
+                        topologySection,
+                        nameof(
+                            ConversionRabbitMqTopologyOptions
+                                .RetryRoutingKeyPrefix))
+            };
+
+        /*
+         * Topology definition ve route registration aynı
+         * doğrulanmış options instance'ını kullanır.
+         */
+        services.AddSingleton<
+            IOptions<ConversionRabbitMqTopologyOptions>>(
+            Options.Create(topologyOptions));
+
+        services
+            .AddRabbitMqTopologyDefinition<
+                ConversionRabbitMqTopologyDefinition>();
+
+        services.AddSingleton<
+            IRetryDelayProvider,
+            ConfiguredRetryDelayProvider>();
+
+        services.AddRabbitMqMessageRoute<
+            ConversionRequested>(
+            route =>
+            {
+                route.Exchange =
+                    topologyOptions.CommandExchange;
+
+                route.RoutingKey =
+                    topologyOptions
+                        .ConversionRequestedRoutingKey;
+
+                route.MessageType =
+                    ConversionMessageTypes
+                        .ConversionRequested;
+
+                route.MessageVersion =
+                    ConversionMessageVersions.V1;
+
+                route.RetryExchange =
+                    topologyOptions.RetryExchange;
+
+                route.RetryRoutingKeyPrefix =
+                    topologyOptions
+                        .RetryRoutingKeyPrefix;
+            });
+
+        services.AddRabbitMqMessageRoute<
+            ConversionCompleted>(
+            route =>
+            {
+                route.Exchange =
+                    topologyOptions.EventExchange;
+
+                route.RoutingKey =
+                    topologyOptions
+                        .ConversionCompletedRoutingKey;
+
+                route.MessageType =
+                    ConversionMessageTypes
+                        .ConversionCompleted;
+
+                route.MessageVersion =
+                    ConversionMessageVersions.V1;
+            });
+
+        services.AddRabbitMqMessageRoute<
+            ConversionFailed>(
+            route =>
+            {
+                route.Exchange =
+                    topologyOptions.EventExchange;
+
+                route.RoutingKey =
+                    topologyOptions
+                        .ConversionFailedRoutingKey;
+
+                route.MessageType =
+                    ConversionMessageTypes
+                        .ConversionFailed;
+
+                route.MessageVersion =
+                    ConversionMessageVersions.V1;
+            });
 
         IConfigurationSection consumerSection =
             configuration.GetSection(
                 RabbitMqConsumerOptions.SectionName);
-
-        string commandExchange =
-            GetRequiredValue(
-                topologySection,
-                nameof(
-                    RabbitMqTopologyOptions.CommandExchange));
-
-        string eventExchange =
-            GetRequiredValue(
-                topologySection,
-                nameof(
-                    RabbitMqTopologyOptions.EventExchange));
-
-        string retryExchange =
-            GetRequiredValue(
-                topologySection,
-                nameof(
-                    RabbitMqTopologyOptions.RetryExchange));
-
-        string conversionRequestedRoutingKey =
-            GetRequiredValue(
-                topologySection,
-                nameof(
-                    RabbitMqTopologyOptions
-                        .ConversionRequestedRoutingKey));
-
-        string conversionCompletedRoutingKey =
-            GetRequiredValue(
-                topologySection,
-                nameof(
-                    RabbitMqTopologyOptions
-                        .ConversionCompletedRoutingKey));
-
-        string conversionFailedRoutingKey =
-            GetRequiredValue(
-                topologySection,
-                nameof(
-                    RabbitMqTopologyOptions
-                        .ConversionFailedRoutingKey));
-
-        string retryRoutingKeyPrefix =
-            GetRequiredValue(
-                topologySection,
-                nameof(
-                    RabbitMqTopologyOptions
-                        .RetryRoutingKeyPrefix));
 
         string configuredConsumerTagPrefix =
             consumerSection[
@@ -85,17 +209,14 @@ internal static class
                         .ConsumerTagPrefix)]
             ?? "document-processing";
 
-        services.AddSingleton<
-            IRetryDelayProvider,
-            ConfiguredRetryDelayProvider>();
-
         services.AddRabbitMqConsumer<
             ConversionRequested,
             ConversionRequestMessageHandler>(
             definition =>
             {
                 definition.QueueName =
-                    conversionRequestQueue;
+                    topologyOptions
+                        .ConversionRequestQueue;
 
                 definition.MessageType =
                     ConversionMessageTypes
@@ -107,78 +228,12 @@ internal static class
                 definition.ConsumerTagPrefix =
                     $"{configuredConsumerTagPrefix}.conversion";
             });
-        services.AddRabbitMqMessageRoute<
-            ConversionRequested>(
-            route =>
-            {
-                route.Exchange =
-                    commandExchange;
 
-                route.RoutingKey =
-                    conversionRequestedRoutingKey;
-
-                route.MessageType =
-                    ConversionMessageTypes
-                        .ConversionRequested;
-
-                route.MessageVersion =
-                    ConversionMessageVersions.V1;
-
-                /*
-                 * ConversionRequested delayed retry destekliyor.
-                 */
-                route.RetryExchange =
-                    retryExchange;
-
-                route.RetryRoutingKeyPrefix =
-                    retryRoutingKeyPrefix;
-            });
-
-        services.AddRabbitMqMessageRoute<
-            ConversionCompleted>(
-            route =>
-            {
-                route.Exchange =
-                    eventExchange;
-
-                route.RoutingKey =
-                    conversionCompletedRoutingKey;
-
-                route.MessageType =
-                    ConversionMessageTypes
-                        .ConversionCompleted;
-
-                route.MessageVersion =
-                    ConversionMessageVersions.V1;
-
-                /*
-                 * Result eventleri conversion retry queue'suna
-                 * gönderilmez. Retry alanları boş bırakılır.
-                 */
-            });
-
-        services.AddRabbitMqMessageRoute<
-            ConversionFailed>(
-            route =>
-            {
-                route.Exchange =
-                    eventExchange;
-
-                route.RoutingKey =
-                    conversionFailedRoutingKey;
-
-                route.MessageType =
-                    ConversionMessageTypes
-                        .ConversionFailed;
-
-                route.MessageVersion =
-                    ConversionMessageVersions.V1;
-            });
         return services;
     }
     private static string GetRequiredValue(
-    IConfigurationSection section,
-    string propertyName)
+        IConfigurationSection section,
+        string propertyName)
     {
         string? value =
             section[propertyName];

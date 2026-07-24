@@ -1,6 +1,6 @@
 ﻿namespace DocumentProcessing.Messaging.RabbitMq.Topology;
 
-internal static class RabbitMqTopologyNameBuilder
+public static class RabbitMqTopologyNameBuilder
 {
     public static string GetRetryQueueName(
         string prefix,

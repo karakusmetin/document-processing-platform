@@ -9,417 +9,189 @@ namespace DocumentProcessing.Messaging.RabbitMq.Topology;
 internal sealed class RabbitMqTopologyInitializer :
     IRabbitMqTopologyInitializer
 {
-    private const bool Durable = true;
-    private const bool Exclusive = false;
-    private const bool AutoDelete = false;
-
     private readonly IRabbitMqChannelFactory _channelFactory;
-    private readonly RabbitMqTopologyOptions _topologyOptions;
-    private readonly RabbitMqRetryOptions _retryOptions;
-    private readonly ILogger<RabbitMqTopologyInitializer> _logger;
-    private readonly SemaphoreSlim _initializationLock = new(1, 1);
 
-    private bool _initialized;
+    private readonly IReadOnlyList<
+        IRabbitMqTopologyDefinition> _definitions;
+
+    private readonly RabbitMqTopologyOptions _options;
+
+    private readonly ILogger<
+        RabbitMqTopologyInitializer> _logger;
 
     public RabbitMqTopologyInitializer(
         IRabbitMqChannelFactory channelFactory,
-        IOptions<RabbitMqTopologyOptions> topologyOptions,
-        IOptions<RabbitMqRetryOptions> retryOptions,
+        IEnumerable<IRabbitMqTopologyDefinition> definitions,
+        IOptions<RabbitMqTopologyOptions> options,
         ILogger<RabbitMqTopologyInitializer> logger)
     {
         ArgumentNullException.ThrowIfNull(channelFactory);
-        ArgumentNullException.ThrowIfNull(topologyOptions);
-        ArgumentNullException.ThrowIfNull(retryOptions);
+        ArgumentNullException.ThrowIfNull(definitions);
+        ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(logger);
 
         _channelFactory = channelFactory;
-        _topologyOptions = topologyOptions.Value;
-        _retryOptions = retryOptions.Value;
+        _options = options.Value;
         _logger = logger;
+
+        IRabbitMqTopologyDefinition[] definitionArray =
+            definitions.ToArray();
+
+        ValidateDefinitions(
+            definitionArray);
+
+        _definitions =
+            definitionArray
+                .OrderBy(
+                    static definition =>
+                        definition.Order)
+                .ThenBy(
+                    static definition =>
+                        definition.Name,
+                    StringComparer.Ordinal)
+                .ToArray();
     }
 
     public async Task InitializeAsync(
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken)
     {
-        if (_initialized)
+        if (_definitions.Count == 0)
         {
-            _logger.LogDebug(
-                "RabbitMQ topology has already been initialized.");
+            _logger.LogWarning(
+                "RabbitMQ topology initialization was requested, " +
+                "but no topology definitions were registered.");
 
             return;
         }
 
-        await _initializationLock
-            .WaitAsync(cancellationToken)
-            .ConfigureAwait(false);
+        _logger.LogInformation(
+            "RabbitMQ topology initialization started. " +
+            "DefinitionCount: {DefinitionCount}, " +
+            "DefaultQueueType: {DefaultQueueType}",
+            _definitions.Count,
+            _options.QueueType);
+
+        IChannel? channel = null;
 
         try
         {
-            if (_initialized)
-            {
-                return;
-            }
-
-            _logger.LogInformation(
-                "RabbitMQ topology initialization started. " +
-                "QueueType: {QueueType}",
-                _topologyOptions.QueueType);
-
-            await using IChannel channel =
+            channel =
                 await _channelFactory
                     .CreateChannelAsync(
                         RabbitMqChannelPurpose.Topology,
                         cancellationToken)
                     .ConfigureAwait(false);
 
-            await DeclareExchangesAsync(
-        channel,
-        cancellationToken)
-    .ConfigureAwait(false);
-
-            await DeclareDeadLetterQueueAsync(
+            IRabbitMqTopologyBuilder builder =
+                new RabbitMqTopologyBuilder(
                     channel,
-                    cancellationToken)
-                .ConfigureAwait(false);
+                    _options,
+                    _logger);
 
-            await DeclareConversionRequestQueueAsync(
-                    channel,
-                    cancellationToken)
-                .ConfigureAwait(false);
+            foreach (
+                IRabbitMqTopologyDefinition definition
+                in _definitions)
+            {
+                _logger.LogInformation(
+                    "Declaring RabbitMQ topology definition. " +
+                    "DefinitionName: {DefinitionName}, " +
+                    "Order: {Order}",
+                    definition.Name,
+                    definition.Order);
 
-            await DeclareConversionResultQueueAsync(
-                    channel,
-                    cancellationToken)
-                .ConfigureAwait(false);
+                await definition
+                    .DeclareAsync(
+                        builder,
+                        cancellationToken)
+                    .ConfigureAwait(false);
 
-            await DeclareRetryQueuesAsync(
-                    channel,
-                    cancellationToken)
-                .ConfigureAwait(false);
-
-            _initialized = true;
+                _logger.LogInformation(
+                    "RabbitMQ topology definition declared. " +
+                    "DefinitionName: {DefinitionName}",
+                    definition.Name);
+            }
 
             _logger.LogInformation(
-                "RabbitMQ topology initialization completed.");
-        }
-        catch (OperationCanceledException)
-            when (cancellationToken.IsCancellationRequested)
-        {
-            _logger.LogWarning(
-                "RabbitMQ topology initialization was cancelled.");
-
-            throw;
-        }
-        catch (Exception exception)
-        {
-            _logger.LogError(
-                exception,
-                "RabbitMQ topology initialization failed. " +
-                "The application will not continue with an " +
-                "incomplete or incompatible topology.");
-
-            throw;
+                "RabbitMQ topology initialization completed. " +
+                "DefinitionCount: {DefinitionCount}",
+                _definitions.Count);
         }
         finally
         {
-            _initializationLock.Release();
+            if (channel is not null)
+            {
+                await DisposeChannelAsync(channel)
+                    .ConfigureAwait(false);
+            }
         }
     }
 
-    private async Task DeclareExchangesAsync(
-        IChannel channel,
-        CancellationToken cancellationToken)
+    private async Task DisposeChannelAsync(
+        IChannel channel)
     {
-        await DeclareExchangeAsync(
-                channel,
-                _topologyOptions.CommandExchange,
-                ExchangeType.Direct,
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        await DeclareExchangeAsync(
-                channel,
-                _topologyOptions.EventExchange,
-                ExchangeType.Topic,
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        await DeclareExchangeAsync(
-                channel,
-                _topologyOptions.RetryExchange,
-                ExchangeType.Direct,
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        await DeclareExchangeAsync(
-                channel,
-                _topologyOptions.DeadLetterExchange,
-                ExchangeType.Direct,
-                cancellationToken)
-            .ConfigureAwait(false);
-    }
-
-    private async Task DeclareExchangeAsync(
-        IChannel channel,
-        string exchangeName,
-        string exchangeType,
-        CancellationToken cancellationToken)
-    {
-        await channel
-            .ExchangeDeclareAsync(
-                exchange: exchangeName,
-                type: exchangeType,
-                durable: Durable,
-                autoDelete: AutoDelete,
-                arguments: null,
-                passive: false,
-                noWait: false,
-                cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
-
-        _logger.LogDebug(
-            "RabbitMQ exchange declared. " +
-            "Exchange: {Exchange}, Type: {ExchangeType}",
-            exchangeName,
-            exchangeType);
-    }
-
-    private async Task DeclareDeadLetterQueueAsync(
-        IChannel channel,
-        CancellationToken cancellationToken)
-    {
-        Dictionary<string, object?> arguments =
-            CreateQueueTypeArguments();
-
-        await DeclareQueueAsync(
-                channel,
-                _topologyOptions.ConversionDeadLetterQueue,
-                NullWhenEmpty(arguments),
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        await channel
-            .QueueBindAsync(
-                queue:
-                    _topologyOptions.ConversionDeadLetterQueue,
-                exchange:
-                    _topologyOptions.DeadLetterExchange,
-                routingKey:
-                    _topologyOptions
-                        .ConversionDeadLetterRoutingKey,
-                arguments: null,
-                noWait: false,
-                cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
-
-        _logger.LogDebug(
-            "RabbitMQ dead-letter queue declared and bound. " +
-            "Queue: {Queue}, Exchange: {Exchange}, " +
-            "RoutingKey: {RoutingKey}",
-            _topologyOptions.ConversionDeadLetterQueue,
-            _topologyOptions.DeadLetterExchange,
-            _topologyOptions.ConversionDeadLetterRoutingKey);
-    }
-
-    private async Task DeclareConversionRequestQueueAsync(
-        IChannel channel,
-        CancellationToken cancellationToken)
-    {
-        Dictionary<string, object?> arguments =
-            CreateQueueTypeArguments();
-
-        arguments["x-dead-letter-exchange"] =
-            _topologyOptions.DeadLetterExchange;
-
-        arguments["x-dead-letter-routing-key"] =
-            _topologyOptions.ConversionDeadLetterRoutingKey;
-
-        await DeclareQueueAsync(
-                channel,
-                _topologyOptions.ConversionRequestQueue,
-                arguments,
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        await channel
-            .QueueBindAsync(
-                queue:
-                    _topologyOptions.ConversionRequestQueue,
-                exchange:
-                    _topologyOptions.CommandExchange,
-                routingKey:
-                    _topologyOptions
-                        .ConversionRequestedRoutingKey,
-                arguments: null,
-                noWait: false,
-                cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
-
-        _logger.LogDebug(
-            "RabbitMQ conversion request queue declared and bound. " +
-            "Queue: {Queue}, Exchange: {Exchange}, " +
-            "RoutingKey: {RoutingKey}",
-            _topologyOptions.ConversionRequestQueue,
-            _topologyOptions.CommandExchange,
-            _topologyOptions.ConversionRequestedRoutingKey);
-    }
-
-    private async Task DeclareRetryQueuesAsync(
-        IChannel channel,
-        CancellationToken cancellationToken)
-    {
-        foreach (int delaySeconds in
-                 _retryOptions.DelaySeconds.Order())
+        try
         {
-            await DeclareRetryQueueAsync(
-                    channel,
-                    delaySeconds,
-                    cancellationToken)
+            if (channel.IsOpen)
+            {
+                await channel
+                    .CloseAsync(
+                        CancellationToken.None)
+                    .ConfigureAwait(false);
+            }
+
+            await channel
+                .DisposeAsync()
                 .ConfigureAwait(false);
         }
-    }
-
-    private async Task DeclareRetryQueueAsync(
-        IChannel channel,
-        int delaySeconds,
-        CancellationToken cancellationToken)
-    {
-        string queueName =
-            RabbitMqTopologyNameBuilder.GetRetryQueueName(
-                _topologyOptions.RetryQueuePrefix,
-                delaySeconds);
-
-        string routingKey =
-            RabbitMqTopologyNameBuilder.GetRetryRoutingKey(
-                _topologyOptions.RetryRoutingKeyPrefix,
-                delaySeconds);
-
-        long delayMilliseconds =
-            checked((long)delaySeconds * 1000L);
-
-        Dictionary<string, object?> arguments =
-            CreateQueueTypeArguments();
-
-        arguments["x-message-ttl"] = delayMilliseconds;
-
-        arguments["x-dead-letter-exchange"] = _topologyOptions.CommandExchange;
-
-        arguments["x-dead-letter-routing-key"] = _topologyOptions.ConversionRequestedRoutingKey;
-
-        await DeclareQueueAsync(
-                channel,
-                queueName,
-                arguments,
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        await channel
-            .QueueBindAsync(
-                queue: queueName,
-                exchange: _topologyOptions.RetryExchange,
-                routingKey: routingKey,
-                arguments: null,
-                noWait: false,
-                cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
-
-        _logger.LogDebug(
-            "RabbitMQ retry queue declared and bound. " +
-            "Queue: {Queue}, RoutingKey: {RoutingKey}, " +
-            "DelaySeconds: {DelaySeconds}",
-            queueName,
-            routingKey,
-            delaySeconds);
-    }
-
-    private static async Task DeclareQueueAsync(
-        IChannel channel,
-        string queueName,
-        IDictionary<string, object?>? arguments,
-        CancellationToken cancellationToken)
-    {
-        await channel
-            .QueueDeclareAsync(
-                queue: queueName,
-                durable: Durable,
-                exclusive: Exclusive,
-                autoDelete: AutoDelete,
-                arguments: arguments,
-                passive: false,
-                noWait: false,
-                cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
-    }
-
-    private Dictionary<string, object?>
-        CreateQueueTypeArguments()
-    {
-        Dictionary<string, object?> arguments =
-            new(StringComparer.Ordinal);
-
-        if (_topologyOptions.QueueType ==
-            RabbitMqQueueType.Quorum)
+        catch (Exception exception)
         {
-            arguments["x-queue-type"] = "quorum";
+            _logger.LogWarning(
+                exception,
+                "An error occurred while disposing the RabbitMQ " +
+                "topology channel.");
+        }
+    }
+
+    private static void ValidateDefinitions(
+        IEnumerable<IRabbitMqTopologyDefinition> definitions)
+    {
+        IRabbitMqTopologyDefinition[] definitionArray =
+            definitions.ToArray();
+
+        IRabbitMqTopologyDefinition? invalidDefinition =
+            definitionArray.FirstOrDefault(
+                static definition =>
+                    string.IsNullOrWhiteSpace(
+                        definition.Name));
+
+        if (invalidDefinition is not null)
+        {
+            throw new InvalidOperationException(
+                "RabbitMQ topology definition name cannot be empty.");
         }
 
-        return arguments;
-    }
+        string[] duplicateNames =
+            definitionArray
+                .GroupBy(
+                    static definition =>
+                        definition.Name,
+                    StringComparer.Ordinal)
+                .Where(
+                    static group =>
+                        group.Count() > 1)
+                .Select(
+                    static group =>
+                        group.Key)
+                .ToArray();
 
-    private static IDictionary<string, object?>? NullWhenEmpty(
-        Dictionary<string, object?> arguments)
-    {
-        return arguments.Count == 0
-            ? null
-            : arguments;
-    }
+        if (duplicateNames.Length == 0)
+        {
+            return;
+        }
 
-    private async Task DeclareConversionResultQueueAsync(
-    IChannel channel,
-    CancellationToken cancellationToken)
-    {
-        Dictionary<string, object?> arguments =
-            CreateQueueTypeArguments();
-
-        await DeclareQueueAsync(
-                channel,
-                _topologyOptions.ConversionResultQueue,
-                NullWhenEmpty(arguments),
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        await channel
-            .QueueBindAsync(
-                queue:
-                    _topologyOptions.ConversionResultQueue,
-                exchange:
-                    _topologyOptions.EventExchange,
-                routingKey:
-                    _topologyOptions
-                        .ConversionCompletedRoutingKey,
-                arguments: null,
-                noWait: false,
-                cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
-
-        await channel
-            .QueueBindAsync(
-                queue:
-                    _topologyOptions.ConversionResultQueue,
-                exchange:
-                    _topologyOptions.EventExchange,
-                routingKey:
-                    _topologyOptions
-                        .ConversionFailedRoutingKey,
-                arguments: null,
-                noWait: false,
-                cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
-
-        _logger.LogDebug(
-            "RabbitMQ conversion result queue declared and bound. " +
-            "Queue: {Queue}, EventExchange: {EventExchange}",
-            _topologyOptions.ConversionResultQueue,
-            _topologyOptions.EventExchange);
+        throw new InvalidOperationException(
+            "Multiple RabbitMQ topology definitions were " +
+            "registered with the same name. Duplicate names: " +
+            string.Join(", ", duplicateNames));
     }
 }

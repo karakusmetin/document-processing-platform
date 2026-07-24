@@ -134,40 +134,13 @@ internal static class RabbitMqOptionsRegistration
 
         services
             .AddOptions<RabbitMqTopologyOptions>()
-            .Bind(configuration.GetSection(
-                RabbitMqTopologyOptions.SectionName))
+            .Bind(
+                configuration.GetSection(
+                    RabbitMqTopologyOptions.SectionName))
             .Validate(
-                options =>
-                    !string.IsNullOrWhiteSpace(
-                        options.CommandExchange) &&
-                    !string.IsNullOrWhiteSpace(
-                        options.EventExchange) &&
-                    !string.IsNullOrWhiteSpace(
-                        options.RetryExchange) &&
-                    !string.IsNullOrWhiteSpace(
-                        options.DeadLetterExchange) &&
-                    !string.IsNullOrWhiteSpace(
-                        options.ConversionRequestQueue) &&
-                    !string.IsNullOrWhiteSpace(
-                        options.ConversionDeadLetterQueue) &&
-                    !string.IsNullOrWhiteSpace(
-                        options.ConversionRequestedRoutingKey) &&
-                    !string.IsNullOrWhiteSpace(
-                        options.ConversionCompletedRoutingKey) &&
-                    !string.IsNullOrWhiteSpace(
-                        options.ConversionFailedRoutingKey) &&
-                    !string.IsNullOrWhiteSpace(
-                        options.ConversionDeadLetterRoutingKey) &&
-                    !string.IsNullOrWhiteSpace(
-                        options.RetryQueuePrefix) &&
-                    !string.IsNullOrWhiteSpace(
-                        options.ConversionResultQueue) &&
-                    !string.IsNullOrWhiteSpace(
-                        options.RetryRoutingKeyPrefix),
-                "RabbitMQ topology names cannot be empty.")
-            .Validate(
-                options => Enum.IsDefined(options.QueueType),
-                "RabbitMQ queue type is not supported.")
+                static options =>
+                    Enum.IsDefined(options.QueueType),
+                "RabbitMQ queue type is invalid.")
             .ValidateOnStart();
 
         return services;

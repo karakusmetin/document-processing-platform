@@ -28,27 +28,23 @@ if (!File.Exists(inputPath))
 HostApplicationBuilder builder =
     Host.CreateApplicationBuilder(args);
 
+
 IConfigurationSection topologySection =
     builder.Configuration.GetSection(
-        RabbitMqTopologyOptions.SectionName);
+        "RabbitMq:Topology");
 
 string commandExchange =
-    topologySection[
-        nameof(RabbitMqTopologyOptions.CommandExchange)]
+    topologySection["CommandExchange"]
     ?? throw new InvalidOperationException(
         "RabbitMQ command exchange is not configured.");
 
 string requestedRoutingKey =
-    topologySection[
-        nameof(
-            RabbitMqTopologyOptions
-                .ConversionRequestedRoutingKey)]
+    topologySection["ConversionRequestedRoutingKey"]
     ?? throw new InvalidOperationException(
         "RabbitMQ requested routing key is not configured.");
 
 builder.Services
-    .AddRabbitMqMessaging(builder.Configuration)
-    .AddRabbitMqTopologyInitialization();
+    .AddRabbitMqMessaging(builder.Configuration);
 
 builder.Services.AddRabbitMqMessageRoute<
     ConversionRequested>(
