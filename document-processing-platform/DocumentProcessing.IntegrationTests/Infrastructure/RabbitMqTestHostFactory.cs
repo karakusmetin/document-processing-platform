@@ -1,5 +1,7 @@
 ﻿using DocumentProcessing.IntegrationTests.Messaging.PublishConsume;
+using DocumentProcessing.IntegrationTests.Messaging.Reliability;
 using DocumentProcessing.Messaging.RabbitMq.Configuration;
+using DocumentProcessing.Messaging.RabbitMq.Consuming;
 using DocumentProcessing.Messaging.RabbitMq.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -128,7 +130,92 @@ internal static class RabbitMqTestHostFactory
 
         return builder.Build();
     }
+    public static IHost CreateReliabilityHost<THandler>(
+    string connectionString,
+    RabbitMqReliabilityTestNames names,
+    ReliabilityMessageProbe probe)
+    where THandler :
+        class,
+        IRabbitMqMessageHandler<ReliabilityTestRequested>
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(
+            connectionString);
 
+        ArgumentNullException.ThrowIfNull(names);
+        ArgumentNullException.ThrowIfNull(probe);
+
+        HostApplicationBuilder builder =
+            Host.CreateApplicationBuilder(
+                Array.Empty<string>());
+
+        builder.Configuration.Sources.Clear();
+
+        builder.Configuration.AddInMemoryCollection(
+            CreateRabbitMqConfiguration(
+                connectionString));
+
+        builder.Services.AddSingleton(
+            names);
+
+        builder.Services.AddSingleton(
+            probe);
+
+        builder.Services
+            .AddRabbitMqMessaging(
+                builder.Configuration)
+            .AddRabbitMqTopologyInitialization();
+
+        builder.Services
+            .AddRabbitMqTopologyDefinition<
+                ReliabilityTestTopologyDefinition>();
+
+        builder.Services
+            .AddRabbitMqMessageRoute<
+                ReliabilityTestRequested>(
+                route =>
+                {
+                    route.Exchange =
+                        names.CommandExchange;
+
+                    route.RoutingKey =
+                        names.RequestedRoutingKey;
+
+                    route.MessageType =
+                        ReliabilityTestMessageContracts
+                            .RequestedMessageType;
+
+                    route.MessageVersion =
+                        ReliabilityTestMessageContracts.Version;
+
+                    route.RetryExchange =
+                        names.RetryExchange;
+
+                    route.RetryRoutingKeyPrefix =
+                        names.RetryRoutingKeyPrefix;
+                });
+
+        builder.Services
+            .AddRabbitMqConsumer<
+                ReliabilityTestRequested,
+                THandler>(
+                consumer =>
+                {
+                    consumer.QueueName =
+                        names.RequestQueue;
+
+                    consumer.MessageType =
+                        ReliabilityTestMessageContracts
+                            .RequestedMessageType;
+
+                    consumer.MessageVersion =
+                        ReliabilityTestMessageContracts.Version;
+
+                    consumer.ConsumerTagPrefix =
+                        "integration-reliability";
+                });
+
+        return builder.Build();
+    }
     private static IReadOnlyDictionary<string, string?>
         CreateRabbitMqConfiguration(
             string connectionString)
