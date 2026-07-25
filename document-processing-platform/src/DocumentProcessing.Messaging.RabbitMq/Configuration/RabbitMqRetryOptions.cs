@@ -2,16 +2,19 @@
 
 public sealed class RabbitMqRetryOptions
 {
-    public const string SectionName = "RabbitMq:Retry";
+    public const string SectionName =
+        "RabbitMq:Retry";
 
-    public int MaximumAttempts { get; set; } = 4;
+    /*
+     * Değer configuration tarafından açıkça verilmelidir.
+     */
+    public int MaximumAttempts { get; set; }
 
+    /*
+     * Bind edilen collection property'lerine dolu varsayılan
+     * değer vermiyoruz. Aksi hâlde configuration değerleriyle
+     * birleşme riski oluşur.
+     */
     public int[] DelaySeconds { get; set; } =
-    [
-        10,
-        60,
-        300
-    ];
-
-    public bool PublishFailedEventWhenExhausted { get; set; } = true;
+        [];
 }

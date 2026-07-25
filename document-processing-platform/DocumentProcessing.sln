@@ -20,6 +20,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.UnitTest
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Sample.Publisher", "samples\DocumentProcessing.Sample.Publisher\DocumentProcessing.Sample.Publisher.csproj", "{3219D689-6487-5540-8898-54D357965768}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.IntegrationTests", "DocumentProcessing.IntegrationTests\DocumentProcessing.IntegrationTests.csproj", "{C9FF0112-CC47-447B-A094-CC2A05C1FABF}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -62,6 +64,10 @@ Global
 		{3219D689-6487-5540-8898-54D357965768}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3219D689-6487-5540-8898-54D357965768}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3219D689-6487-5540-8898-54D357965768}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C9FF0112-CC47-447B-A094-CC2A05C1FABF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C9FF0112-CC47-447B-A094-CC2A05C1FABF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C9FF0112-CC47-447B-A094-CC2A05C1FABF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C9FF0112-CC47-447B-A094-CC2A05C1FABF}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
