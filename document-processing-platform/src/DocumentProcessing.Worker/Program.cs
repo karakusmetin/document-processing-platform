@@ -9,7 +9,7 @@ HostApplicationBuilder builder =
 builder.Services.AddWindowsService(
     options =>
         options.ServiceName =
-            "Document Processing Worker");
+            "DocumentProcessingWorker");
 
 builder.Services.AddRabbitMqMessaging(builder.Configuration).AddRabbitMqTopologyInitialization();
 

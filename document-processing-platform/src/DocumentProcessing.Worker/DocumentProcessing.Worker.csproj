@@ -1,5 +1,11 @@
-<Project Sdk="Microsoft.NET.Sdk.Worker">
-  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
+  <PropertyGroup>
+	<TargetFramework>net10.0</TargetFramework>
+	<OutputType>Exe</OutputType>
+
+	<ImplicitUsings>enable</ImplicitUsings>
+	<Nullable>enable</Nullable>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\DocumentProcessing.Contracts\DocumentProcessing.Contracts.csproj" />
     <ProjectReference Include="..\DocumentProcessing.Core\DocumentProcessing.Core.csproj" />
@@ -9,4 +15,16 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" />
   </ItemGroup>
+	<ItemGroup>
+		<None Update="appsettings.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+
+			<!--
+      Ayarların exe içine gömülmesini istemiyoruz.
+      Sunucu bazında dışarıdan düzenlenecek.
+    -->
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+		</None>
+	</ItemGroup>
 </Project>

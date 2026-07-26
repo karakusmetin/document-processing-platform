@@ -10,3 +10,5 @@ temp/
 .env
 TestResults/
 coverage/
+# Local build and deployment artifacts
+artifacts/
