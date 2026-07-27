@@ -1,4 +1,4 @@
-﻿namespace DocumentProcessing.Contracts.Messaging;
+﻿namespace Rabbit.Messaging.Abstractions;
 
 public static class MessageHeaders
 {

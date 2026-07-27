@@ -1,10 +1,9 @@
-﻿using DocumentProcessing.Contracts.Messaging;
-using DocumentProcessing.Core.Abstractions;
-using DocumentProcessing.Messaging.RabbitMq.Configuration;
+﻿using DocumentProcessing.Messaging.RabbitMq.Configuration;
 using DocumentProcessing.Messaging.RabbitMq.Publishing;
 using DocumentProcessing.Messaging.RabbitMq.Topology;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Rabbit.Messaging.Abstractions;
 
 namespace DocumentProcessing.Messaging.RabbitMq.Retrying;
 

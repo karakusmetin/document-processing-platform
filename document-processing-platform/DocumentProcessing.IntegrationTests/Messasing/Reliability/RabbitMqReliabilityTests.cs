@@ -1,5 +1,4 @@
-﻿using DocumentProcessing.Contracts.Messaging;
-using DocumentProcessing.Core.Abstractions;
+﻿using Rabbit.Messaging.Abstractions;
 using DocumentProcessing.IntegrationTests.Infrastructure;
 using DocumentProcessing.Messaging.RabbitMq.Serialization;
 using Microsoft.Extensions.DependencyInjection;

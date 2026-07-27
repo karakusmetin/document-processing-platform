@@ -1,4 +1,4 @@
-﻿using DocumentProcessing.Contracts.Messaging;
+﻿using Rabbit.Messaging.Abstractions;
 
 namespace DocumentProcessing.Messaging.RabbitMq.Consuming;
 

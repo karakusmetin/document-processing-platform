@@ -1,6 +1,4 @@
-﻿using DocumentProcessing.Contracts.Messaging;
-
-namespace DocumentProcessing.Core.Abstractions;
+﻿namespace Rabbit.Messaging.Abstractions;
 
 public interface IMessageRetryScheduler
 {

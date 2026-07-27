@@ -1,10 +1,9 @@
-﻿using DocumentProcessing.Contracts.Messaging;
-using DocumentProcessing.Core.Abstractions;
-using DocumentProcessing.IntegrationTests.Infrastructure;
+﻿using DocumentProcessing.IntegrationTests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
 using Xunit;
+using Rabbit.Messaging.Abstractions;
 
 namespace DocumentProcessing.IntegrationTests
     .Messaging.PublishConsume;

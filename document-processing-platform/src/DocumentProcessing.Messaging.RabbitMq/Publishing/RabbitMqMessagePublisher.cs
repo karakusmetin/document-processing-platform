@@ -1,7 +1,7 @@
-﻿using DocumentProcessing.Contracts.Messaging;
-using DocumentProcessing.Core.Abstractions;
+﻿using Rabbit.Messaging.Abstractions;
 using DocumentProcessing.Messaging.RabbitMq.Configuration;
 using Microsoft.Extensions.Options;
+
 
 namespace DocumentProcessing.Messaging.RabbitMq.Publishing;
 

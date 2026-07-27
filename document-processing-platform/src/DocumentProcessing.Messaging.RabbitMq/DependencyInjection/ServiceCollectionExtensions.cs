@@ -1,4 +1,3 @@
-using DocumentProcessing.Core.Abstractions;
 using DocumentProcessing.Messaging.RabbitMq.Channels;
 using DocumentProcessing.Messaging.RabbitMq.Configuration;
 using DocumentProcessing.Messaging.RabbitMq.Connection;
@@ -8,6 +7,7 @@ using DocumentProcessing.Messaging.RabbitMq.Topology;
 using DocumentProcessing.Messaging.RabbitMq.Retrying;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Rabbit.Messaging.Abstractions;
 
 namespace DocumentProcessing.Messaging.RabbitMq.DependencyInjection;
 

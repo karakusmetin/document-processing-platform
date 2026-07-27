@@ -1,4 +1,4 @@
-﻿using DocumentProcessing.Contracts.Messaging;
+﻿using Rabbit.Messaging.Abstractions;
 using DocumentProcessing.Messaging.RabbitMq.Channels;
 using DocumentProcessing.Messaging.RabbitMq.Configuration;
 using DocumentProcessing.Messaging.RabbitMq.Serialization;

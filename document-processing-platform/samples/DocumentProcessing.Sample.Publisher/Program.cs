@@ -1,7 +1,5 @@
-using DocumentProcessing.Contracts.Messaging;
+using Rabbit.Messaging.Abstractions;
 using DocumentProcessing.Contracts.Messages;
-using DocumentProcessing.Core.Abstractions;
-using DocumentProcessing.Messaging.RabbitMq.Configuration;
 using DocumentProcessing.Messaging.RabbitMq.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;

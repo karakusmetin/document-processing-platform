@@ -1,5 +1,5 @@
 ﻿using DocumentProcessing.Contracts.Messages;
-using DocumentProcessing.Contracts.Messaging;
+using Rabbit.Messaging.Abstractions;
 using DocumentProcessing.Core.Abstractions;
 using DocumentProcessing.Core.Models;
 using DocumentProcessing.Messaging.RabbitMq.Consuming;

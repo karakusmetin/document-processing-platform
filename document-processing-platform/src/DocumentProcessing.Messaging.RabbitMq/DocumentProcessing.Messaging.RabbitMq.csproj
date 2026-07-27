@@ -5,8 +5,7 @@
     <None Remove="Messaging.RabbitMq\**" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\DocumentProcessing.Contracts\DocumentProcessing.Contracts.csproj" />
-    <ProjectReference Include="..\DocumentProcessing.Core\DocumentProcessing.Core.csproj" />
+    <ProjectReference Include="..\RabbitMq\Rabbit.Messaging.Abstractions\Rabbit.Messaging.Abstractions.csproj" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging" />
     <PackageReference Include="RabbitMQ.Client" />

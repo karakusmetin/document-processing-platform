@@ -4,6 +4,7 @@
     <ProjectReference Include="..\..\src\DocumentProcessing.Conversion\DocumentProcessing.Conversion.csproj" />
     <ProjectReference Include="..\..\src\DocumentProcessing.Messaging.RabbitMq\DocumentProcessing.Messaging.RabbitMq.csproj" />
     <ProjectReference Include="..\..\src\DocumentProcessing.Worker\DocumentProcessing.Worker.csproj" />
+    <ProjectReference Include="..\..\src\RabbitMq\Rabbit.Messaging.Abstractions\Rabbit.Messaging.Abstractions.csproj" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />

@@ -1,4 +1,4 @@
-﻿using DocumentProcessing.Contracts.Messaging;
+﻿using Rabbit.Messaging.Abstractions;
 using DocumentProcessing.Core.Abstractions;
 using DocumentProcessing.Core.Models;
 using DocumentProcessing.Worker.Consumers.Retry;

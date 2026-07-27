@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
-using DocumentProcessing.Contracts.Messaging;
+using Rabbit.Messaging.Abstractions;
 
 namespace DocumentProcessing.Messaging.RabbitMq.Serialization;
 

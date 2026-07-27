@@ -1,4 +1,4 @@
-﻿using DocumentProcessing.Contracts.Messaging;
+﻿using Rabbit.Messaging.Abstractions;
 using DocumentProcessing.Messaging.RabbitMq.Consuming;
 
 namespace DocumentProcessing.IntegrationTests

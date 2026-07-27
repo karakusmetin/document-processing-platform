@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
     <ProjectReference Include="..\DocumentProcessing.Contracts\DocumentProcessing.Contracts.csproj" />
+    <ProjectReference Include="..\RabbitMq\Rabbit.Messaging.Abstractions\Rabbit.Messaging.Abstractions.csproj" />
   </ItemGroup>
 </Project>
