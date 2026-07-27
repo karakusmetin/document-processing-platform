@@ -1,5 +1,5 @@
 using DocumentProcessing.Conversion.DependencyInjection;
-using DocumentProcessing.Messaging.RabbitMq.DependencyInjection;
+using Queue.Messaging.RabbitMq.DependencyInjection;
 using DocumentProcessing.Storage.DependencyInjection;
 using DocumentProcessing.Worker.DependencyInjection;
 

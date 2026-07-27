@@ -1,6 +1,6 @@
 ﻿using DocumentProcessing.Contracts.Messages;
-using DocumentProcessing.Messaging.RabbitMq.Configuration;
-using DocumentProcessing.Messaging.RabbitMq.DependencyInjection;
+using Queue.Messaging.RabbitMq.Configuration;
+using Queue.Messaging.RabbitMq.DependencyInjection;
 using DocumentProcessing.Worker.Configuration;
 using DocumentProcessing.Worker.Consumers;
 using DocumentProcessing.Worker.Consumers.Retry;

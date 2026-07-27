@@ -1,8 +1,8 @@
 ﻿using DocumentProcessing.Contracts.Messages;
-using Rabbit.Messaging.Abstractions;
+using Queue.Messaging.Abstractions;
 using DocumentProcessing.Core.Abstractions;
 using DocumentProcessing.Core.Models;
-using DocumentProcessing.Messaging.RabbitMq.Consuming;
+using Queue.Messaging.RabbitMq.Consuming;
 using DocumentProcessing.Worker.Consumers.Retry;
 
 namespace DocumentProcessing.Worker.Consumers;

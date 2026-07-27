@@ -1,4 +1,4 @@
-﻿using DocumentProcessing.Messaging.RabbitMq.Publishing;
+﻿using Queue.Messaging.RabbitMq.Publishing;
 using Xunit;
 
 namespace DocumentProcessing.UnitTests.Messaging.Publishing;

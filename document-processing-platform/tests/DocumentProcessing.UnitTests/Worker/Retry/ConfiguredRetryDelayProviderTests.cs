@@ -1,4 +1,4 @@
-﻿using DocumentProcessing.Messaging.RabbitMq.Configuration;
+﻿using Queue.Messaging.RabbitMq.Configuration;
 using DocumentProcessing.Worker.Consumers.Retry;
 using Microsoft.Extensions.Options;
 using Xunit;

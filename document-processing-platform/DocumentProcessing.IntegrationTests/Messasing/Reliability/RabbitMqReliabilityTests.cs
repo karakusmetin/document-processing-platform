@@ -1,6 +1,6 @@
-﻿using Rabbit.Messaging.Abstractions;
+﻿using Queue.Messaging.Abstractions;
 using DocumentProcessing.IntegrationTests.Infrastructure;
-using DocumentProcessing.Messaging.RabbitMq.Serialization;
+using Queue.Messaging.RabbitMq.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;

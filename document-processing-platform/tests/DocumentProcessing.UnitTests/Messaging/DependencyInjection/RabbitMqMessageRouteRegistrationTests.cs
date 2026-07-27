@@ -1,5 +1,5 @@
-﻿using DocumentProcessing.Messaging.RabbitMq.DependencyInjection;
-using DocumentProcessing.Messaging.RabbitMq.Publishing;
+﻿using Queue.Messaging.RabbitMq.DependencyInjection;
+using Queue.Messaging.RabbitMq.Publishing;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 

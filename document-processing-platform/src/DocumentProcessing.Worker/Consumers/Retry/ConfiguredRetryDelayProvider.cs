@@ -1,4 +1,4 @@
-﻿using DocumentProcessing.Messaging.RabbitMq.Configuration;
+﻿using Queue.Messaging.RabbitMq.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace DocumentProcessing.Worker.Consumers.Retry;

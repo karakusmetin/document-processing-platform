@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using RabbitMQ.Client;
 using Xunit;
-using Rabbit.Messaging.Abstractions;
+using Queue.Messaging.Abstractions;
 
 namespace DocumentProcessing.IntegrationTests
     .Messaging.PublishConsume;

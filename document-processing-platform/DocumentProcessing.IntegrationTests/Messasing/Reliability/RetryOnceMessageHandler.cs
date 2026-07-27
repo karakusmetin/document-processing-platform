@@ -1,6 +1,6 @@
-﻿using Rabbit.Messaging.Abstractions;
+﻿using Queue.Messaging.Abstractions;
 using DocumentProcessing.Core.Abstractions;
-using DocumentProcessing.Messaging.RabbitMq.Consuming;
+using Queue.Messaging.RabbitMq.Consuming;
 
 namespace DocumentProcessing.IntegrationTests
     .Messaging.Reliability;

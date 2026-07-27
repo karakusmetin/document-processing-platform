@@ -1,8 +1,8 @@
 ﻿using DocumentProcessing.IntegrationTests.Messaging.PublishConsume;
 using DocumentProcessing.IntegrationTests.Messaging.Reliability;
-using DocumentProcessing.Messaging.RabbitMq.Configuration;
-using DocumentProcessing.Messaging.RabbitMq.Consuming;
-using DocumentProcessing.Messaging.RabbitMq.DependencyInjection;
+using Queue.Messaging.RabbitMq.Configuration;
+using Queue.Messaging.RabbitMq.Consuming;
+using Queue.Messaging.RabbitMq.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

@@ -1,6 +1,6 @@
-using Rabbit.Messaging.Abstractions;
+using Queue.Messaging.Abstractions;
 using DocumentProcessing.Contracts.Messages;
-using DocumentProcessing.Messaging.RabbitMq.DependencyInjection;
+using Queue.Messaging.RabbitMq.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;

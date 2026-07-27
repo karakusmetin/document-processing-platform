@@ -1,4 +1,4 @@
-﻿using DocumentProcessing.Messaging.RabbitMq.Topology;
+﻿using Queue.Messaging.RabbitMq.Topology;
 
 namespace DocumentProcessing.IntegrationTests
     .Messaging.Reliability;

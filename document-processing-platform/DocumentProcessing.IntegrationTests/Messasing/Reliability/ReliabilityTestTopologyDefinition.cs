@@ -1,7 +1,6 @@
-﻿using DocumentProcessing.Messaging.RabbitMq.Topology;
+﻿using Queue.Messaging.RabbitMq.Topology;
 
-namespace DocumentProcessing.IntegrationTests
-    .Messaging.Reliability;
+namespace DocumentProcessing.IntegrationTests.Messaging.Reliability;
 
 internal sealed class ReliabilityTestTopologyDefinition :
     IRabbitMqTopologyDefinition

@@ -10,9 +10,9 @@
     <ProjectReference Include="..\DocumentProcessing.Contracts\DocumentProcessing.Contracts.csproj" />
     <ProjectReference Include="..\DocumentProcessing.Core\DocumentProcessing.Core.csproj" />
     <ProjectReference Include="..\DocumentProcessing.Conversion\DocumentProcessing.Conversion.csproj" />
-    <ProjectReference Include="..\DocumentProcessing.Messaging.RabbitMq\DocumentProcessing.Messaging.RabbitMq.csproj" />
     <ProjectReference Include="..\DocumentProcessing.Storage\DocumentProcessing.Storage.csproj" />
-    <ProjectReference Include="..\RabbitMq\Rabbit.Messaging.Abstractions\Rabbit.Messaging.Abstractions.csproj" />
+    <ProjectReference Include="..\RabbitMq\Queue.Messaging.Abstractions\Queue.Messaging.Abstractions.csproj" />
+    <ProjectReference Include="..\RabbitMq\Queue.Messaging.RabbitMq\Queue.Messaging.RabbitMq.csproj" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" />
   </ItemGroup>

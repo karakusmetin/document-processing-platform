@@ -1,5 +1,5 @@
-﻿using DocumentProcessing.Messaging.RabbitMq.Consuming;
-using Rabbit.Messaging.Abstractions;
+﻿using Queue.Messaging.RabbitMq.Consuming;
+using Queue.Messaging.Abstractions;
 
 namespace DocumentProcessing.IntegrationTests
     .Messaging.PublishConsume;

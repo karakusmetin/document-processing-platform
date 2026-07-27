@@ -1,7 +1,6 @@
-﻿using DocumentProcessing.Messaging.RabbitMq.Configuration;
-using DocumentProcessing.Messaging.RabbitMq.Topology;
+﻿using Queue.Messaging.RabbitMq.Configuration;
+using Queue.Messaging.RabbitMq.Topology;
 using DocumentProcessing.Worker.Configuration;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace DocumentProcessing.Worker.Topology;
