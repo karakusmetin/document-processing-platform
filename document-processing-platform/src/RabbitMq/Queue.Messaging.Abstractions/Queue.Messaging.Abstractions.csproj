@@ -1,13 +1,28 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-	<AssemblyName>Queue.Messaging.Abstractions</AssemblyName>
-	<RootNamespace>Queue.Messaging.Abstractions</RootNamespace>
-	<ImplicitUsings>enable</ImplicitUsings>
-	<Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFrameworks>net10.0;net48</TargetFrameworks>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<AssemblyName>Queue.Messaging.Abstractions</AssemblyName>
+		<RootNamespace>Queue.Messaging.Abstractions</RootNamespace>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<PackageId>Queue.Messaging.Abstractions</PackageId>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Version>0.1.0-preview.1</Version>
+		<Authors>Queue Messaging</Authors>
+		<Description>
+			Broker-independent messaging contracts, envelopes,
+			publishing abstractions and retry scheduling contracts.
+		</Description>
+		<PackageTags>messaging;abstractions;queue;event-driven</PackageTags>
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	</PropertyGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+		<PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net48" PrivateAssets="all" />
+	</ItemGroup>
 
 </Project>

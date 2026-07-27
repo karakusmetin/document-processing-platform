@@ -30,10 +30,10 @@ public sealed record MessageEnvelope<TMessage>
         int attempt = 1,
         Guid? messageId = null)
     {
-        ArgumentNullException.ThrowIfNull(payload);
-        ArgumentException.ThrowIfNullOrWhiteSpace(messageType);
-        ArgumentException.ThrowIfNullOrWhiteSpace(messageVersion);
-        ArgumentException.ThrowIfNullOrWhiteSpace(producer);
+        Guard.NotNull(payload,nameof(payload));
+        Guard.NotNullOrWhiteSpace(messageVersion,nameof(messageVersion));
+        Guard.NotNullOrWhiteSpace(producer,nameof(producer));
+        Guard.NotNullOrWhiteSpace(correlationId,nameof(correlationId));
 
         if (attempt < 1)
         {
