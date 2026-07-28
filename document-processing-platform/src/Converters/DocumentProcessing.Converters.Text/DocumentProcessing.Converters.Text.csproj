@@ -1,0 +1,35 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<AssemblyName>DocumentProcessing.Converters.Text</AssemblyName>
+		<RootNamespace>DocumentProcessing.Converters.Text</RootNamespace>
+
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+
+		<IsPackable>true</IsPackable>
+		<PackageId>DocumentProcessing.Converters.Text</PackageId>
+		<Version>0.1.0-preview.1</Version>
+		<Authors>Document Processing</Authors>
+
+		<Description>
+			Plain text and HTML conversion engine for the
+			document processing platform.
+		</Description>
+
+		<PackageTags>conversion;text;html;pdf</PackageTags>
+
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	</PropertyGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\DocumentProcessing.Contracts\DocumentProcessing.Contracts.csproj" />
+	</ItemGroup>
+
+</Project>
