@@ -14,11 +14,7 @@ public sealed class RabbitMqConnectionOptions
 
     public string Password { get; set; } = string.Empty;
 
-    public string ClientProvidedName { get; set; } = "document-processing-worker";
-    
-    public string CompatibilityMode { get; set; } = "Standard";
-
-    public string QueueType { get; set; } = "classic";
+    public string ClientProvidedName { get; set; } = "queue-messaging-client";
 
     public bool AutomaticRecoveryEnabled { get; set; } = true;
 
