@@ -1,0 +1,43 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFrameworks>net10.0;net48</TargetFrameworks>
+		<AssemblyName>Queue.Messaging.RabbitMq</AssemblyName>
+		<RootNamespace>Queue.Messaging.RabbitMq</RootNamespace>
+
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+
+		<IsPackable>true</IsPackable>
+		<PackageId>Queue.Messaging.RabbitMq</PackageId>
+		<Version>0.1.0-preview.1</Version>
+		<Authors>Queue Messaging</Authors>
+
+		<Description>
+			Reusable RabbitMQ messaging infrastructure with
+			publisher confirms, consumers, retry, dead-lettering,
+			topology management and dependency injection support.
+		</Description>
+
+		<PackageTags>messaging;rabbitmq;queue;consumer;publisher;retry</PackageTags>
+
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+	</PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+		<PackageReference Include="Microsoft.Extensions.Logging" />
+		<PackageReference Include="RabbitMQ.Client" />
+		<PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
+		<PackageReference Include="System.Text.Json" />
+	</ItemGroup>
+	<ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+		<PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies.net48" PrivateAssets="all" />
+	</ItemGroup>
+	<ItemGroup>
+	  <ProjectReference Include="..\Queue.Messaging.Abstractions\Queue.Messaging.Abstractions.csproj" />
+	</ItemGroup>
+</Project>

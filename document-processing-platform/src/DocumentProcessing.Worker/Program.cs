@@ -1,13 +1,24 @@
 using DocumentProcessing.Conversion.DependencyInjection;
-using DocumentProcessing.Messaging.RabbitMq.DependencyInjection;
+using Queue.Messaging.RabbitMq.DependencyInjection;
 using DocumentProcessing.Storage.DependencyInjection;
-using DocumentProcessing.Worker;
+using DocumentProcessing.Worker.DependencyInjection;
 
-HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
-builder.Services.AddWindowsService(options => options.ServiceName = "Document Processing Worker");
-builder.Services.AddRabbitMqMessaging(builder.Configuration);
+HostApplicationBuilder builder =
+    Host.CreateApplicationBuilder(args);
+
+builder.Services.AddWindowsService(
+    options =>
+        options.ServiceName =
+            "DocumentProcessingWorker");
+
+builder.Services.AddRabbitMqMessaging(builder.Configuration).AddRabbitMqTopologyInitialization();
+
 builder.Services.AddFileStorage(builder.Configuration);
-builder.Services.AddDocumentConversion();
-builder.Services.AddHostedService<ConversionConsumerWorker>();
 
-await builder.Build().RunAsync();
+builder.Services.AddDocumentConversion();
+
+builder.Services.AddConversionMessaging(builder.Configuration);
+
+await builder
+    .Build()
+    .RunAsync();
