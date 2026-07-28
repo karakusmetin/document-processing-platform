@@ -5,6 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Queue.Messaging.RabbitMq.Compatibility;
 
 namespace Queue.Messaging.RabbitMq.Consuming;
 
@@ -36,12 +37,12 @@ internal sealed class RabbitMqConsumerHostedService<TMessage> :
         IOptions<RabbitMqConsumerDefinition<TMessage>> definition,
         ILogger<RabbitMqConsumerHostedService<TMessage>> logger)
     {
-        ArgumentNullException.ThrowIfNull(channelFactory);
-        ArgumentNullException.ThrowIfNull(messageSerializer);
-        ArgumentNullException.ThrowIfNull(scopeFactory);
-        ArgumentNullException.ThrowIfNull(consumerOptions);
-        ArgumentNullException.ThrowIfNull(definition);
-        ArgumentNullException.ThrowIfNull(logger);
+        Guard.NotNull(channelFactory, nameof(channelFactory));
+        Guard.NotNull(messageSerializer, nameof(messageSerializer));
+        Guard.NotNull(scopeFactory, nameof(scopeFactory));
+        Guard.NotNull(consumerOptions, nameof(consumerOptions));
+        Guard.NotNull(definition, nameof(definition));
+        Guard.NotNull(logger, nameof(logger));
 
         _channelFactory = channelFactory;
         _messageSerializer = messageSerializer;

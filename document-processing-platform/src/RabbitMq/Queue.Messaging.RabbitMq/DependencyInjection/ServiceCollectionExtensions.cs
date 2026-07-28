@@ -8,6 +8,7 @@ using Queue.Messaging.RabbitMq.Retrying;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Queue.Messaging.Abstractions;
+using Queue.Messaging.RabbitMq.Compatibility;
 
 namespace Queue.Messaging.RabbitMq.DependencyInjection;
 
@@ -15,8 +16,8 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddRabbitMqMessaging(this IServiceCollection services, IConfiguration configuration)
     {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(configuration);
+        Guard.NotNull(services, nameof(services));
+        Guard.NotNull(configuration, nameof(configuration));
 
         services.AddRabbitMqOptions(configuration);
 
@@ -40,7 +41,7 @@ public static class ServiceCollectionExtensions
     }
     public static IServiceCollection AddRabbitMqTopologyInitialization(this IServiceCollection services)
     {
-        ArgumentNullException.ThrowIfNull(services);
+        Guard.NotNull(services, nameof(services));
 
         services.AddHostedService<RabbitMqTopologyHostedService>();
 

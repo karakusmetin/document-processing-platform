@@ -1,7 +1,8 @@
-﻿using Queue.Messaging.RabbitMq.Configuration;
-using Queue.Messaging.RabbitMq.Connection;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Queue.Messaging.RabbitMq.Compatibility;
+using Queue.Messaging.RabbitMq.Configuration;
+using Queue.Messaging.RabbitMq.Connection;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -18,9 +19,9 @@ internal sealed class RabbitMqChannelFactory : IRabbitMqChannelFactory
         IOptions<RabbitMqConsumerOptions> consumerOptions,
         ILogger<RabbitMqChannelFactory> logger)
     {
-        ArgumentNullException.ThrowIfNull(connectionProvider);
-        ArgumentNullException.ThrowIfNull(consumerOptions);
-        ArgumentNullException.ThrowIfNull(logger);
+        Guard.NotNull(connectionProvider,nameof(connectionProvider));
+        Guard.NotNull(consumerOptions, nameof(consumerOptions));
+        Guard.NotNull(logger,nameof(logger));
 
         _connectionProvider = connectionProvider;
         _consumerOptions = consumerOptions.Value;

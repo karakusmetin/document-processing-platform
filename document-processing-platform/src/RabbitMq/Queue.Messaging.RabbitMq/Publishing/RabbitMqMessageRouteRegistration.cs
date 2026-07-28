@@ -1,4 +1,6 @@
-﻿namespace Queue.Messaging.RabbitMq.Publishing;
+﻿using Queue.Messaging.RabbitMq.Compatibility;
+
+namespace Queue.Messaging.RabbitMq.Publishing;
 
 internal sealed class RabbitMqMessageRouteRegistration<TMessage> :
     IRabbitMqMessageRouteRegistration
@@ -6,7 +8,7 @@ internal sealed class RabbitMqMessageRouteRegistration<TMessage> :
     public RabbitMqMessageRouteRegistration(
         RabbitMqMessageRoute route)
     {
-        ArgumentNullException.ThrowIfNull(route);
+        Guard.NotNull(route, nameof(route));
 
         Route = route;
     }

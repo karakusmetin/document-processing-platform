@@ -4,6 +4,7 @@ using Queue.Messaging.RabbitMq.Topology;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Queue.Messaging.Abstractions;
+using Queue.Messaging.RabbitMq.Compatibility;
 
 namespace Queue.Messaging.RabbitMq.Retrying;
 
@@ -23,11 +24,11 @@ internal sealed class RabbitMqMessageRetryScheduler :
     IOptions<RabbitMqPublisherOptions> publisherOptions,
     ILogger<RabbitMqMessageRetryScheduler> logger)
     {
-        ArgumentNullException.ThrowIfNull(rabbitMqPublisher);
-        ArgumentNullException.ThrowIfNull(routeResolver);
-        ArgumentNullException.ThrowIfNull(retryOptions);
-        ArgumentNullException.ThrowIfNull(publisherOptions);
-        ArgumentNullException.ThrowIfNull(logger);
+        Guard.NotNull(rabbitMqPublisher, nameof(rabbitMqPublisher));
+        Guard.NotNull(routeResolver, nameof(routeResolver));
+        Guard.NotNull(retryOptions, nameof(retryOptions));
+        Guard.NotNull(publisherOptions, nameof(publisherOptions));
+        Guard.NotNull(logger, nameof(logger));
 
         _rabbitMqPublisher = rabbitMqPublisher;
         _routeResolver = routeResolver;
@@ -41,7 +42,7 @@ internal sealed class RabbitMqMessageRetryScheduler :
         TimeSpan delay,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(originalEnvelope);
+        Guard.NotNull(originalEnvelope, nameof(originalEnvelope));
 
         if (originalEnvelope.Payload is null)
         {
@@ -106,18 +107,23 @@ internal sealed class RabbitMqMessageRetryScheduler :
                 $"message type '{typeof(TMessage).FullName}'.");
         }
 
-        string retryRoutingKey =
-            RabbitMqTopologyNameBuilder.GetRetryRoutingKey(
+        string retryExchange = Guard.NotNullOrWhiteSpace(route.RetryExchange, nameof(route.RetryExchange));
+
+        string retryRoutingKeyPrefix =
+            Guard.NotNullOrWhiteSpace(
                 route.RetryRoutingKeyPrefix,
-                delaySeconds);
+                nameof(route.RetryRoutingKeyPrefix));
+
+        string retryRoutingKey =
+            RabbitMqTopologyNameBuilder
+                .GetRetryRoutingKey(
+                    retryRoutingKeyPrefix,
+                    delaySeconds);
 
         RabbitMqPublishDestination destination =
             new(
-                Exchange:
-                    route.RetryExchange,
-
-                RoutingKey:
-                    retryRoutingKey);
+                retryExchange,
+                retryRoutingKey);
 
         /*
          * Bu çağrı publisher confirm alınmadan tamamlanmaz.

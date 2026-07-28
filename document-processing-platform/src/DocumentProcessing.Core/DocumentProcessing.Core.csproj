@@ -1,6 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <ProjectReference Include="..\DocumentProcessing.Contracts\DocumentProcessing.Contracts.csproj" />
-    <ProjectReference Include="..\RabbitMq\Rabbit.Messaging.Abstractions\Rabbit.Messaging.Abstractions.csproj" />
-  </ItemGroup>
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\DocumentProcessing.Contracts\DocumentProcessing.Contracts.csproj" />
+		<ProjectReference Include="..\RabbitMq\Queue.Messaging.Abstractions\Queue.Messaging.Abstractions.csproj" />
+	</ItemGroup>
 </Project>

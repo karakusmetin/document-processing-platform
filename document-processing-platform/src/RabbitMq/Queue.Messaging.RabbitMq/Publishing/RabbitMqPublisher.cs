@@ -9,6 +9,7 @@ using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using RabbitMQ.Client.Exceptions;
+using Queue.Messaging.RabbitMq.Compatibility;
 
 namespace Queue.Messaging.RabbitMq.Publishing;
 
@@ -36,10 +37,10 @@ internal sealed class RabbitMqPublisher :
         IOptions<RabbitMqPublisherOptions> options,
         ILogger<RabbitMqPublisher> logger)
     {
-        ArgumentNullException.ThrowIfNull(channelFactory);
-        ArgumentNullException.ThrowIfNull(serializer);
-        ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(logger);
+        Guard.NotNull(channelFactory, nameof(channelFactory));
+        Guard.NotNull(serializer, nameof(serializer));
+        Guard.NotNull(options, nameof(options));
+        Guard.NotNull(logger, nameof(logger));
 
         _channelFactory = channelFactory;
         _serializer = serializer;
@@ -52,14 +53,14 @@ internal sealed class RabbitMqPublisher :
         RabbitMqPublishDestination destination,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(envelope);
-        ArgumentNullException.ThrowIfNull(destination);
+        Guard.NotNull(envelope, nameof(envelope));
+        Guard.NotNull(destination, nameof(destination));
 
-        ArgumentException.ThrowIfNullOrWhiteSpace(
-            destination.Exchange);
+        Guard.NotNullOrWhiteSpace(
+            destination.Exchange, nameof(destination.Exchange));
 
-        ArgumentException.ThrowIfNullOrWhiteSpace(
-            destination.RoutingKey);
+        Guard.NotNullOrWhiteSpace(
+            destination.RoutingKey, nameof(destination.RoutingKey));
 
         ThrowIfDisposed();
 
@@ -454,7 +455,7 @@ internal sealed class RabbitMqPublisher :
 
     private void ThrowIfDisposed()
     {
-        ObjectDisposedException.ThrowIf(
+        Guard.NotDisposed(
             _disposed,
             this);
     }

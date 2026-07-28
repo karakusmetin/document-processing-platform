@@ -1,4 +1,6 @@
-﻿namespace Queue.Messaging.RabbitMq.Consuming;
+﻿using Queue.Messaging.RabbitMq.Compatibility;
+
+namespace Queue.Messaging.RabbitMq.Consuming;
 
 internal sealed class RabbitMqMessageContractException :
     Exception
@@ -8,8 +10,8 @@ internal sealed class RabbitMqMessageContractException :
         string message)
         : base(message)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(
-            failureCode);
+        Guard.NotNullOrWhiteSpace(
+            failureCode, nameof(failureCode));
 
         FailureCode = failureCode;
     }
@@ -20,8 +22,8 @@ internal sealed class RabbitMqMessageContractException :
         Exception innerException)
         : base(message, innerException)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(
-            failureCode);
+        Guard.NotNullOrWhiteSpace(
+            failureCode, nameof(failureCode));
 
         FailureCode = failureCode;
     }

@@ -1,6 +1,7 @@
 ﻿using System.Text.Json;
 using System.Text.Json.Serialization;
 using Queue.Messaging.Abstractions;
+using Queue.Messaging.RabbitMq.Compatibility;
 
 namespace Queue.Messaging.RabbitMq.Serialization;
 
@@ -11,7 +12,7 @@ internal sealed class SystemTextJsonMessageSerializer : IMessageSerializer
     public ReadOnlyMemory<byte> Serialize<TMessage>(
         MessageEnvelope<TMessage> envelope)
     {
-        ArgumentNullException.ThrowIfNull(envelope);
+        Guard.NotNull(envelope, nameof(envelope));
 
         try
         {

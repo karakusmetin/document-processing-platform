@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using Queue.Messaging.RabbitMq.Compatibility;
 
 namespace Queue.Messaging.RabbitMq.Consuming;
 
@@ -54,12 +55,12 @@ internal sealed class RabbitMqConsumerInstance<TMessage> :
                 "Consumer instance number must be greater than zero.");
         }
 
-        ArgumentNullException.ThrowIfNull(channelFactory);
-        ArgumentNullException.ThrowIfNull(messageSerializer);
-        ArgumentNullException.ThrowIfNull(scopeFactory);
-        ArgumentNullException.ThrowIfNull(consumerOptions);
-        ArgumentNullException.ThrowIfNull(definition);
-        ArgumentNullException.ThrowIfNull(logger);
+        Guard.NotNull(channelFactory, nameof(channelFactory));
+        Guard.NotNull(messageSerializer, nameof(messageSerializer));
+        Guard.NotNull(scopeFactory, nameof(scopeFactory));
+        Guard.NotNull(consumerOptions, nameof(consumerOptions));
+        Guard.NotNull(definition, nameof(definition));
+        Guard.NotNull(logger, nameof(logger));
 
         _instanceNumber = instanceNumber;
 
@@ -359,7 +360,7 @@ internal sealed class RabbitMqConsumerInstance<TMessage> :
         ReadOnlyMemory<byte> body,
         RabbitMqMessageHandlingResult result)
     {
-        ArgumentNullException.ThrowIfNull(result);
+        Guard.NotNull(result, nameof(result));
 
         switch (result.Disposition)
         {
@@ -540,7 +541,7 @@ internal sealed class RabbitMqConsumerInstance<TMessage> :
     private void ValidateEnvelope(
         MessageEnvelope<TMessage> envelope)
     {
-        ArgumentNullException.ThrowIfNull(envelope);
+        Guard.NotNull(envelope, nameof(envelope));
 
         if (envelope.MessageId == Guid.Empty)
         {
@@ -629,6 +630,7 @@ internal sealed class RabbitMqConsumerInstance<TMessage> :
         IChannel? channel = _channel;
         string? consumerTag = _consumerTag;
 
+
         using CancellationTokenSource configuredTimeoutSource =
             new(_consumerOptions.ShutdownTimeout);
 
@@ -652,17 +654,15 @@ internal sealed class RabbitMqConsumerInstance<TMessage> :
                     _instanceNumber,
                     consumerTag);
 
-                await channel
-                    .BasicCancelAsync(
-                        consumerTag:
-                            consumerTag,
-
+                if (!string.IsNullOrWhiteSpace(consumerTag))
+                {
+                    await channel.BasicCancelAsync(
+                        consumerTag!,
                         noWait:
                             false,
-
                         cancellationToken:
-                            shutdownToken)
-                    .ConfigureAwait(false);
+                            cancellationToken);
+                }
             }
 
             _logger.LogInformation(
@@ -770,7 +770,7 @@ internal sealed class RabbitMqConsumerInstance<TMessage> :
     {
         return
             $"{_definition.ConsumerTagPrefix}" +
-            $".{Environment.ProcessId}" +
+            $".{ProcessCompatibility.CurrentProcessId}" +
             $".{_instanceNumber}" +
             $".{Guid.NewGuid():N}";
     }
@@ -794,7 +794,7 @@ internal sealed class RabbitMqConsumerInstance<TMessage> :
 
     private void ThrowIfDisposed()
     {
-        ObjectDisposedException.ThrowIf(
+        Guard.NotDisposed(
             Volatile.Read(ref _disposed) == 1,
             this);
     }

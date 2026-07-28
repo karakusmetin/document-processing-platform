@@ -3,6 +3,7 @@ using Queue.Messaging.RabbitMq.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RabbitMQ.Client;
+using Queue.Messaging.RabbitMq.Compatibility;
 
 namespace Queue.Messaging.RabbitMq.Topology;
 
@@ -25,10 +26,10 @@ internal sealed class RabbitMqTopologyInitializer :
         IOptions<RabbitMqTopologyOptions> options,
         ILogger<RabbitMqTopologyInitializer> logger)
     {
-        ArgumentNullException.ThrowIfNull(channelFactory);
-        ArgumentNullException.ThrowIfNull(definitions);
-        ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(logger);
+        Guard.NotNull(channelFactory, nameof(channelFactory));
+        Guard.NotNull(definitions, nameof(definitions));
+        Guard.NotNull(options, nameof(options));
+        Guard.NotNull(logger, nameof(logger));
 
         _channelFactory = channelFactory;
         _options = options.Value;

@@ -1,6 +1,7 @@
 ﻿using Queue.Messaging.RabbitMq.Consuming;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Queue.Messaging.RabbitMq.Compatibility;
 
 namespace Queue.Messaging.RabbitMq.DependencyInjection;
 
@@ -16,8 +17,8 @@ public static class RabbitMqConsumerServiceCollectionExtensions
             class,
             IRabbitMqMessageHandler<TMessage>
     {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(configure);
+        Guard.NotNull(services, nameof(services));
+        Guard.NotNull(configure, nameof(configure));
 
         services
             .AddOptions<

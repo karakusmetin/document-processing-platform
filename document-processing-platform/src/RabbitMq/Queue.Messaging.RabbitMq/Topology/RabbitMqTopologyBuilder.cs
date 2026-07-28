@@ -1,6 +1,7 @@
 ﻿using Queue.Messaging.RabbitMq.Configuration;
 using Microsoft.Extensions.Logging;
 using RabbitMQ.Client;
+using Queue.Messaging.RabbitMq.Compatibility;
 
 namespace Queue.Messaging.RabbitMq.Topology;
 
@@ -16,9 +17,9 @@ internal sealed class RabbitMqTopologyBuilder :
         RabbitMqTopologyOptions options,
         ILogger logger)
     {
-        ArgumentNullException.ThrowIfNull(channel);
-        ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(logger);
+        Guard.NotNull(channel, nameof(channel));
+        Guard.NotNull(options, nameof(options));
+        Guard.NotNull(logger, nameof(logger));
 
         _channel = channel;
         _options = options;
@@ -33,8 +34,8 @@ internal sealed class RabbitMqTopologyBuilder :
         IReadOnlyDictionary<string, object?>? arguments = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        ArgumentException.ThrowIfNullOrWhiteSpace(type);
+        Guard.NotNullOrWhiteSpace(name, nameof(name));
+        Guard.NotNullOrWhiteSpace(type, nameof(type));
 
         IDictionary<string, object?>? effectiveArguments =
             CopyArguments(arguments);
@@ -84,7 +85,7 @@ internal sealed class RabbitMqTopologyBuilder :
         IReadOnlyDictionary<string, object?>? arguments = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        Guard.NotNullOrWhiteSpace(name, nameof(name));
 
         RabbitMqQueueType effectiveQueueType =
             queueType ??
@@ -146,14 +147,14 @@ internal sealed class RabbitMqTopologyBuilder :
         IReadOnlyDictionary<string, object?>? arguments = null,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(queue);
-        ArgumentException.ThrowIfNullOrWhiteSpace(exchange);
+        Guard.NotNullOrWhiteSpace(queue, nameof(queue));
+        Guard.NotNullOrWhiteSpace(exchange, nameof(exchange));
 
         /*
          * Fanout exchange kullanımında routing key boş olabilir.
          * Bu nedenle burada ThrowIfNullOrWhiteSpace kullanmıyoruz.
          */
-        ArgumentNullException.ThrowIfNull(routingKey);
+        Guard.NotNull(routingKey, nameof(routingKey));
 
         IDictionary<string, object?>? effectiveArguments =
             CopyArguments(arguments);
@@ -257,7 +258,7 @@ internal sealed class RabbitMqTopologyBuilder :
         bool exclusive,
         bool autoDelete)
     {
-        if (!Enum.IsDefined(queueType))
+        if (!EnumCompatibility.IsDefined(queueType))
         {
             throw new ArgumentOutOfRangeException(
                 nameof(queueType),

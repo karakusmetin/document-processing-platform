@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Queue.Messaging.RabbitMq.Compatibility;
 
 namespace Queue.Messaging.RabbitMq.Configuration;
 
@@ -139,7 +140,7 @@ internal static class RabbitMqOptionsRegistration
                     RabbitMqTopologyOptions.SectionName))
             .Validate(
                 static options =>
-                    Enum.IsDefined(options.QueueType),
+                    EnumCompatibility.IsDefined(options.QueueType),
                 "RabbitMQ queue type is invalid.")
             .ValidateOnStart();
 

@@ -1,11 +1,16 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\DocumentProcessing.Contracts\DocumentProcessing.Contracts.csproj" />
-    <ProjectReference Include="..\..\src\DocumentProcessing.Core\DocumentProcessing.Core.csproj" />
-    <ProjectReference Include="..\..\src\RabbitMq\Queue.Messaging.Abstractions\Queue.Messaging.Abstractions.csproj" />
-    <ProjectReference Include="..\..\src\RabbitMq\Queue.Messaging.RabbitMq\Queue.Messaging.RabbitMq.csproj" />
-    <ProjectReference Include="..\..\src\RabbitMq\Rabbit.Messaging.Abstractions\Rabbit.Messaging.Abstractions.csproj" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" />
-  </ItemGroup>
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+	</PropertyGroup>
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\DocumentProcessing.Contracts\DocumentProcessing.Contracts.csproj" />
+		<ProjectReference Include="..\..\src\DocumentProcessing.Core\DocumentProcessing.Core.csproj" />
+		<ProjectReference Include="..\..\src\RabbitMq\Queue.Messaging.Abstractions\Queue.Messaging.Abstractions.csproj" />
+		<ProjectReference Include="..\..\src\RabbitMq\Queue.Messaging.RabbitMq\Queue.Messaging.RabbitMq.csproj" />
+		<ProjectReference Include="..\..\src\RabbitMq\Queue.Messaging.Abstractions\Queue.Messaging.Abstractions.csproj" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" />
+	</ItemGroup>
 </Project>

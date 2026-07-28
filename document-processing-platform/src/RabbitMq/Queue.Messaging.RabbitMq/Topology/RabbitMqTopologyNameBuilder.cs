@@ -1,4 +1,6 @@
-﻿namespace Queue.Messaging.RabbitMq.Topology;
+﻿using Queue.Messaging.RabbitMq.Compatibility;
+
+namespace Queue.Messaging.RabbitMq.Topology;
 
 public static class RabbitMqTopologyNameBuilder
 {
@@ -6,7 +8,7 @@ public static class RabbitMqTopologyNameBuilder
         string prefix,
         int delaySeconds)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(prefix);
+        Guard.NotNullOrWhiteSpace(prefix, nameof(prefix));
 
         if (delaySeconds <= 0)
         {
@@ -23,7 +25,7 @@ public static class RabbitMqTopologyNameBuilder
         string prefix,
         int delaySeconds)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(prefix);
+        Guard.NotNullOrWhiteSpace(prefix, nameof(prefix));
 
         if (delaySeconds <= 0)
         {

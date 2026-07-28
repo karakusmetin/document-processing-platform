@@ -1,4 +1,6 @@
-﻿namespace Queue.Messaging.RabbitMq.Consuming;
+﻿using Queue.Messaging.RabbitMq.Compatibility;
+
+namespace Queue.Messaging.RabbitMq.Consuming;
 
 /// <summary>
 /// Bir mesaj handler'ının RabbitMQ consumer runtime'a döndürdüğü işlem sonucudur.
@@ -12,7 +14,7 @@ public sealed record RabbitMqMessageHandlingResult(
     public static RabbitMqMessageHandlingResult Acknowledge(
         string reason)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(reason);
+        Guard.NotNullOrWhiteSpace(reason, nameof(reason));
 
         return new RabbitMqMessageHandlingResult(
             Disposition:
@@ -33,14 +35,14 @@ public sealed record RabbitMqMessageHandlingResult(
         string reason,
         string diagnosticId)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(
-            failureCode);
+        Guard.NotNullOrWhiteSpace(
+            failureCode, nameof(failureCode));
 
-        ArgumentException.ThrowIfNullOrWhiteSpace(
-            reason);
+        Guard.NotNullOrWhiteSpace(
+            reason, nameof(reason));
 
-        ArgumentException.ThrowIfNullOrWhiteSpace(
-            diagnosticId);
+        Guard.NotNullOrWhiteSpace(
+            diagnosticId, nameof(diagnosticId));
 
         return new RabbitMqMessageHandlingResult(
             Disposition:

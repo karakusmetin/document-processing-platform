@@ -1,6 +1,7 @@
-﻿using Queue.Messaging.RabbitMq.Configuration;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Queue.Messaging.RabbitMq.Compatibility;
+using Queue.Messaging.RabbitMq.Configuration;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -19,8 +20,8 @@ internal sealed class RabbitMqConnectionProvider : IRabbitMqConnectionProvider
         IOptions<RabbitMqConnectionOptions> options,
         ILogger<RabbitMqConnectionProvider> logger)
     {
-        ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(logger);
+        Guard.NotNull(options, nameof(options));
+        Guard.NotNull(logger, nameof(logger));
 
         _options = options.Value;
         _logger = logger;
@@ -344,7 +345,7 @@ internal sealed class RabbitMqConnectionProvider : IRabbitMqConnectionProvider
 
     private void ThrowIfDisposed()
     {
-        ObjectDisposedException.ThrowIf(
+        Guard.NotDisposed(
             _disposed,
             this);
     }

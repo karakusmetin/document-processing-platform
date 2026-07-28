@@ -1,5 +1,6 @@
 ﻿using Queue.Messaging.RabbitMq.Topology;
 using Microsoft.Extensions.DependencyInjection;
+using Queue.Messaging.RabbitMq.Compatibility;
 
 namespace Queue.Messaging.RabbitMq.DependencyInjection;
 
@@ -13,7 +14,7 @@ public static class
             class,
             IRabbitMqTopologyDefinition
     {
-        ArgumentNullException.ThrowIfNull(services);
+        Guard.NotNull(services, nameof(services));
 
         services.AddSingleton<
             IRabbitMqTopologyDefinition,

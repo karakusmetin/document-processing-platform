@@ -1,4 +1,6 @@
-﻿namespace Queue.Messaging.RabbitMq.Publishing;
+﻿using Queue.Messaging.RabbitMq.Compatibility;
+
+namespace Queue.Messaging.RabbitMq.Publishing;
 
 internal sealed class RabbitMqMessageRouteResolver :
     IRabbitMqMessageRouteResolver
@@ -11,7 +13,7 @@ internal sealed class RabbitMqMessageRouteResolver :
         IEnumerable<IRabbitMqMessageRouteRegistration>
             registrations)
     {
-        ArgumentNullException.ThrowIfNull(registrations);
+        Guard.NotNull(registrations, nameof(registrations));
 
         IRabbitMqMessageRouteRegistration[] registrationArray =
             registrations.ToArray();

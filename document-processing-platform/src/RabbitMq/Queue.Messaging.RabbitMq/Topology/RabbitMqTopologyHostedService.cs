@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Queue.Messaging.RabbitMq.Compatibility;
 
 namespace Queue.Messaging.RabbitMq.Topology;
 
@@ -12,8 +13,8 @@ internal sealed class RabbitMqTopologyHostedService : IHostedService
         IRabbitMqTopologyInitializer initializer,
         ILogger<RabbitMqTopologyHostedService> logger)
     {
-        ArgumentNullException.ThrowIfNull(initializer);
-        ArgumentNullException.ThrowIfNull(logger);
+        Guard.NotNull(initializer, nameof(initializer));
+        Guard.NotNull(logger, nameof(logger));
 
         _initializer = initializer;
         _logger = logger;

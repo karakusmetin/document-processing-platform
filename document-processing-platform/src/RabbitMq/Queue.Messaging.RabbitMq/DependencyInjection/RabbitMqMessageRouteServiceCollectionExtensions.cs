@@ -1,5 +1,6 @@
 ﻿using Queue.Messaging.RabbitMq.Publishing;
 using Microsoft.Extensions.DependencyInjection;
+using Queue.Messaging.RabbitMq.Compatibility;
 
 namespace Queue.Messaging.RabbitMq.DependencyInjection;
 
@@ -12,8 +13,8 @@ public static class
         Action<RabbitMqMessageRouteDefinition<TMessage>>
             configure)
     {
-        ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(configure);
+        Guard.NotNull(services, nameof(services));
+        Guard.NotNull(configure, nameof(configure));
 
         RabbitMqMessageRouteDefinition<TMessage> definition =
             new();

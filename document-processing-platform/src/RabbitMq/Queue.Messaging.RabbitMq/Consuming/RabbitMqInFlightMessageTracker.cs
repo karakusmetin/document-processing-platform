@@ -1,4 +1,6 @@
-﻿namespace Queue.Messaging.RabbitMq.Consuming;
+﻿using Queue.Messaging.RabbitMq.Compatibility;
+
+namespace Queue.Messaging.RabbitMq.Consuming;
 
 internal sealed class RabbitMqInFlightMessageTracker
 {
@@ -51,8 +53,7 @@ internal sealed class RabbitMqInFlightMessageTracker
             drainTask = _drained.Task;
         }
 
-        return drainTask.WaitAsync(
-            cancellationToken);
+        return TaskCompatibility.WaitAsync(drainTask, cancellationToken);
     }
 
     private void Release()
@@ -99,7 +100,7 @@ internal sealed class RabbitMqInFlightMessageTracker
         public TrackingLease(
             RabbitMqInFlightMessageTracker owner)
         {
-            ArgumentNullException.ThrowIfNull(owner);
+            Guard.NotNull(owner, nameof(owner));
 
             _owner = owner;
         }

@@ -1,6 +1,7 @@
 ﻿using Queue.Messaging.Abstractions;
 using Queue.Messaging.RabbitMq.Configuration;
 using Microsoft.Extensions.Options;
+using Queue.Messaging.RabbitMq.Compatibility;
 
 
 namespace Queue.Messaging.RabbitMq.Publishing;
@@ -17,9 +18,9 @@ internal sealed class RabbitMqMessagePublisher :
         IRabbitMqPublisher rabbitMqPublisher,
         IOptions<RabbitMqPublisherOptions> publisherOptions)
     {
-        ArgumentNullException.ThrowIfNull(routeResolver);
-        ArgumentNullException.ThrowIfNull(rabbitMqPublisher);
-        ArgumentNullException.ThrowIfNull(publisherOptions);
+        Guard.NotNull(routeResolver, nameof(routeResolver));
+        Guard.NotNull(rabbitMqPublisher, nameof(rabbitMqPublisher));
+        Guard.NotNull(publisherOptions, nameof(publisherOptions));
 
         _routeResolver = routeResolver;
         _rabbitMqPublisher = rabbitMqPublisher;
@@ -31,8 +32,8 @@ internal sealed class RabbitMqMessagePublisher :
         MessagePublishContext context,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(message);
-        ArgumentNullException.ThrowIfNull(context);
+        Guard.NotNull(message, nameof(message));
+        Guard.NotNull(context, nameof(context));
 
         if (context.Attempt < 1)
         {
