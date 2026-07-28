@@ -1,3 +1,4 @@
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.0.0.0
@@ -10,17 +11,21 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Storage"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Conversion", "src\DocumentProcessing.Conversion\DocumentProcessing.Conversion.csproj", "{5E0D6BA8-CEB5-5D04-B5DA-5F5F1BE95454}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Messaging.RabbitMq", "src\DocumentProcessing.Messaging.RabbitMq\DocumentProcessing.Messaging.RabbitMq.csproj", "{4BE26E6E-7177-5058-B5F5-DB76BAAE58DC}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Worker", "src\DocumentProcessing.Worker\DocumentProcessing.Worker.csproj", "{DB6A5AA1-38C2-5362-8A0A-B718E158D0AA}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Client", "src\DocumentProcessing.Client\DocumentProcessing.Client.csproj", "{AED81D9F-96BB-59DE-B965-3780944DBABB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Integration.Editt", "src\DocumentProcessing.Integration.Editt\DocumentProcessing.Integration.Editt.csproj", "{A9A4A0A4-6361-55CE-BC06-26E927F24C58}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.UnitTests", "tests\DocumentProcessing.UnitTests\DocumentProcessing.UnitTests.csproj", "{5FF8977A-BE47-5C04-AF89-F20A6175DA3A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Sample.Publisher", "samples\DocumentProcessing.Sample.Publisher\DocumentProcessing.Sample.Publisher.csproj", "{3219D689-6487-5540-8898-54D357965768}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.IntegrationTests", "DocumentProcessing.IntegrationTests\DocumentProcessing.IntegrationTests.csproj", "{C9FF0112-CC47-447B-A094-CC2A05C1FABF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "RabbitMq", "RabbitMq", "{F36B58EB-8960-409A-891A-48A97602195B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Queue.Messaging.Abstractions", "src\RabbitMq\Queue.Messaging.Abstractions\Queue.Messaging.Abstractions.csproj", "{8EC31337-0E8D-763F-8684-8EC052EDC843}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Queue.Messaging.RabbitMq", "src\RabbitMq\Queue.Messaging.RabbitMq\Queue.Messaging.RabbitMq.csproj", "{C6DD0EF4-B014-4E82-DC20-2F8C2C4C9F28}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -44,10 +49,6 @@ Global
 		{5E0D6BA8-CEB5-5D04-B5DA-5F5F1BE95454}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5E0D6BA8-CEB5-5D04-B5DA-5F5F1BE95454}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5E0D6BA8-CEB5-5D04-B5DA-5F5F1BE95454}.Release|Any CPU.Build.0 = Release|Any CPU
-		{4BE26E6E-7177-5058-B5F5-DB76BAAE58DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{4BE26E6E-7177-5058-B5F5-DB76BAAE58DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{4BE26E6E-7177-5058-B5F5-DB76BAAE58DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{4BE26E6E-7177-5058-B5F5-DB76BAAE58DC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DB6A5AA1-38C2-5362-8A0A-B718E158D0AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DB6A5AA1-38C2-5362-8A0A-B718E158D0AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DB6A5AA1-38C2-5362-8A0A-B718E158D0AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -56,10 +57,6 @@ Global
 		{AED81D9F-96BB-59DE-B965-3780944DBABB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AED81D9F-96BB-59DE-B965-3780944DBABB}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AED81D9F-96BB-59DE-B965-3780944DBABB}.Release|Any CPU.Build.0 = Release|Any CPU
-		{A9A4A0A4-6361-55CE-BC06-26E927F24C58}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{A9A4A0A4-6361-55CE-BC06-26E927F24C58}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{A9A4A0A4-6361-55CE-BC06-26E927F24C58}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{A9A4A0A4-6361-55CE-BC06-26E927F24C58}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5FF8977A-BE47-5C04-AF89-F20A6175DA3A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5FF8977A-BE47-5C04-AF89-F20A6175DA3A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5FF8977A-BE47-5C04-AF89-F20A6175DA3A}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -68,5 +65,27 @@ Global
 		{3219D689-6487-5540-8898-54D357965768}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3219D689-6487-5540-8898-54D357965768}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3219D689-6487-5540-8898-54D357965768}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C9FF0112-CC47-447B-A094-CC2A05C1FABF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C9FF0112-CC47-447B-A094-CC2A05C1FABF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C9FF0112-CC47-447B-A094-CC2A05C1FABF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C9FF0112-CC47-447B-A094-CC2A05C1FABF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8EC31337-0E8D-763F-8684-8EC052EDC843}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8EC31337-0E8D-763F-8684-8EC052EDC843}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8EC31337-0E8D-763F-8684-8EC052EDC843}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8EC31337-0E8D-763F-8684-8EC052EDC843}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C6DD0EF4-B014-4E82-DC20-2F8C2C4C9F28}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C6DD0EF4-B014-4E82-DC20-2F8C2C4C9F28}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C6DD0EF4-B014-4E82-DC20-2F8C2C4C9F28}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C6DD0EF4-B014-4E82-DC20-2F8C2C4C9F28}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8EC31337-0E8D-763F-8684-8EC052EDC843} = {F36B58EB-8960-409A-891A-48A97602195B}
+		{C6DD0EF4-B014-4E82-DC20-2F8C2C4C9F28} = {F36B58EB-8960-409A-891A-48A97602195B}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8516ABBC-3A7E-4A1D-AAE8-B76525AD7808}
 	EndGlobalSection
 EndGlobal

@@ -1,9 +1,20 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\DocumentProcessing.Conversion\DocumentProcessing.Conversion.csproj" />
-    <PackageReference Include="Microsoft.NET.Test.Sdk" />
-    <PackageReference Include="xunit" />
-    <PackageReference Include="xunit.runner.visualstudio" />
-    <PackageReference Include="coverlet.collector" />
-  </ItemGroup>
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\DocumentProcessing.Contracts\DocumentProcessing.Contracts.csproj" />
+		<ProjectReference Include="..\..\src\DocumentProcessing.Conversion\DocumentProcessing.Conversion.csproj" />
+		<ProjectReference Include="..\..\src\DocumentProcessing.Worker\DocumentProcessing.Worker.csproj" />
+		<ProjectReference Include="..\..\src\RabbitMq\Queue.Messaging.Abstractions\Queue.Messaging.Abstractions.csproj" />
+		<ProjectReference Include="..\..\src\RabbitMq\Queue.Messaging.RabbitMq\Queue.Messaging.RabbitMq.csproj" />
+		<PackageReference Include="Microsoft.NET.Test.Sdk" />
+		<PackageReference Include="xunit" />
+		<PackageReference Include="xunit.runner.visualstudio" />
+		<PackageReference Include="coverlet.collector" />
+	</ItemGroup>
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<IsPackable>false</IsPackable>
+		<IsTestProject>true</IsTestProject>
+	</PropertyGroup>
 </Project>

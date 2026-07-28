@@ -2,7 +2,7 @@ namespace DocumentProcessing.Core.Models;
 
 public sealed record ConversionExecutionResult
 {
-    private ConversionExecutionResult() { }
+    public ConversionExecutionResult() { }
 
     public bool IsSuccess { get; init; }
     public string? OutputReference { get; init; }

@@ -1,0 +1,63 @@
+﻿1. Paylaşılan RabbitMQ container zaten çalışıyor.
+
+2. Teste özel GUID'li exchange ve queue isimleri üretiliyor.
+
+3. IHost oluşturuluyor.
+
+4. RabbitMqTopologyHostedService çalışıyor.
+
+5. IntegrationTestTopologyDefinition:
+       exchange oluşturuyor
+       queue oluşturuyor
+       binding oluşturuyor
+
+6. RabbitMqConsumerHostedService başlıyor.
+
+7. Consumer channel açılıyor.
+
+8. BasicQos(prefetch: 1) uygulanıyor.
+
+9. Queue dinlenmeye başlanıyor.
+
+10. IMessagePublisher resolve ediliyor.
+
+11. IntegrationTestRequested publish ediliyor.
+
+12. Route registry:
+        CLR type
+        → exchange
+        → routing key
+        → message type/version
+    bilgilerini çözüyor.
+
+13. Envelope oluşturuluyor.
+
+14. JSON serialization yapılıyor.
+
+15. Persistent + mandatory publish yapılıyor.
+
+16. Publisher confirm geliyor.
+
+17. RabbitMQ mesajı queue'ya yönlendiriyor.
+
+18. Generic consumer callback'i çalışıyor.
+
+19. Body byte[] olarak kopyalanıyor.
+
+20. Envelope deserialize ediliyor.
+
+21. Message type/version doğrulanıyor.
+
+22. DI scope açılıyor.
+
+23. IntegrationTestRequestedHandler resolve ediliyor.
+
+24. Handler Acknowledge dönüyor.
+
+25. Runtime BasicAckAsync çağırıyor.
+
+26. Host durduruluyor.
+
+27. Queue kontrol ediliyor.
+
+28. Queue boş bulunuyor.

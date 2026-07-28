@@ -1,12 +1,31 @@
-<Project Sdk="Microsoft.NET.Sdk.Worker">
-  <PropertyGroup><OutputType>Exe</OutputType></PropertyGroup>
+﻿<Project Sdk="Microsoft.NET.Sdk.Worker">
+  <PropertyGroup>
+	<TargetFramework>net10.0</TargetFramework>
+	<OutputType>Exe</OutputType>
+
+	<ImplicitUsings>enable</ImplicitUsings>
+	<Nullable>enable</Nullable>
+  </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\DocumentProcessing.Contracts\DocumentProcessing.Contracts.csproj" />
     <ProjectReference Include="..\DocumentProcessing.Core\DocumentProcessing.Core.csproj" />
     <ProjectReference Include="..\DocumentProcessing.Conversion\DocumentProcessing.Conversion.csproj" />
-    <ProjectReference Include="..\DocumentProcessing.Messaging.RabbitMq\DocumentProcessing.Messaging.RabbitMq.csproj" />
     <ProjectReference Include="..\DocumentProcessing.Storage\DocumentProcessing.Storage.csproj" />
+    <ProjectReference Include="..\RabbitMq\Queue.Messaging.Abstractions\Queue.Messaging.Abstractions.csproj" />
+    <ProjectReference Include="..\RabbitMq\Queue.Messaging.RabbitMq\Queue.Messaging.RabbitMq.csproj" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" />
   </ItemGroup>
+	<ItemGroup>
+		<None Update="appsettings.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+
+			<!--
+      Ayarların exe içine gömülmesini istemiyoruz.
+      Sunucu bazında dışarıdan düzenlenecek.
+    -->
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+		</None>
+	</ItemGroup>
 </Project>
