@@ -1,14 +1,16 @@
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
+using Queue.Messaging.Abstractions;
 using Queue.Messaging.RabbitMq.Channels;
+using Queue.Messaging.RabbitMq.Compatibility;
 using Queue.Messaging.RabbitMq.Configuration;
 using Queue.Messaging.RabbitMq.Connection;
 using Queue.Messaging.RabbitMq.Publishing;
+using Queue.Messaging.RabbitMq.Retrying;
 using Queue.Messaging.RabbitMq.Serialization;
 using Queue.Messaging.RabbitMq.Topology;
-using Queue.Messaging.RabbitMq.Retrying;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Queue.Messaging.Abstractions;
-using Queue.Messaging.RabbitMq.Compatibility;
 
 namespace Queue.Messaging.RabbitMq.DependencyInjection;
 
@@ -43,7 +45,14 @@ public static class ServiceCollectionExtensions
     {
         Guard.NotNull(services, nameof(services));
 
-        services.AddHostedService<RabbitMqTopologyHostedService>();
+        /*
+         * Birden fazla standard endpoint registration aynı
+         * topology hosted service'i eklemeye çalışabilir.
+         *
+         * TryAddEnumerable aynı implementation'ın yalnızca
+         * bir defa eklenmesini sağlar.
+         */
+        services.TryAddEnumerable(ServiceDescriptor.Singleton< IHostedService, RabbitMqTopologyHostedService>());
 
         return services;
     }
