@@ -44,6 +44,24 @@ public static class RabbitMqConsumerServiceCollectionExtensions
                     !string.IsNullOrWhiteSpace(
                         definition.ConsumerTagPrefix),
                 "RabbitMQ consumer tag prefix is required.")
+            .Validate(
+                static definition =>
+                    !definition.PrefetchCount.HasValue ||
+                    definition.PrefetchCount.Value > 0,
+                "Endpoint RabbitMQ consumer prefetch count " +
+                "must be greater than zero.")
+            .Validate(
+                static definition =>
+                    !definition.ConcurrentConsumerCount.HasValue ||
+                    definition.ConcurrentConsumerCount.Value > 0,
+                "Endpoint RabbitMQ concurrent consumer count " +
+                "must be greater than zero.")
+            .Validate(
+                static definition =>
+                    !definition.ShutdownTimeout.HasValue ||
+                    definition.ShutdownTimeout.Value > TimeSpan.Zero,
+                "Endpoint RabbitMQ consumer shutdown timeout " +
+                "must be greater than zero.")
             .ValidateOnStart();
 
         /*

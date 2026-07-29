@@ -1,11 +1,11 @@
-﻿using Queue.Messaging.RabbitMq.Channels;
-using Queue.Messaging.RabbitMq.Configuration;
-using Queue.Messaging.RabbitMq.Serialization;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Queue.Messaging.RabbitMq.Channels;
 using Queue.Messaging.RabbitMq.Compatibility;
+using Queue.Messaging.RabbitMq.Configuration;
+using Queue.Messaging.RabbitMq.Serialization;
 
 namespace Queue.Messaging.RabbitMq.Consuming;
 
@@ -16,8 +16,11 @@ internal sealed class RabbitMqConsumerHostedService<TMessage> :
     private readonly IMessageSerializer _messageSerializer;
     private readonly IServiceScopeFactory _scopeFactory;
 
-    private readonly RabbitMqConsumerOptions _consumerOptions;
-    private readonly RabbitMqConsumerDefinition<TMessage> _definition;
+    private readonly RabbitMqConsumerDefinition<TMessage>
+        _definition;
+
+    private readonly RabbitMqEffectiveConsumerOptions
+        _effectiveOptions;
 
     private readonly ILogger<
         RabbitMqConsumerHostedService<TMessage>> _logger;
@@ -37,21 +40,49 @@ internal sealed class RabbitMqConsumerHostedService<TMessage> :
         IOptions<RabbitMqConsumerDefinition<TMessage>> definition,
         ILogger<RabbitMqConsumerHostedService<TMessage>> logger)
     {
-        Guard.NotNull(channelFactory, nameof(channelFactory));
-        Guard.NotNull(messageSerializer, nameof(messageSerializer));
-        Guard.NotNull(scopeFactory, nameof(scopeFactory));
-        Guard.NotNull(consumerOptions, nameof(consumerOptions));
-        Guard.NotNull(definition, nameof(definition));
-        Guard.NotNull(logger, nameof(logger));
+        Guard.NotNull(
+            channelFactory,
+            nameof(channelFactory));
 
-        _channelFactory = channelFactory;
-        _messageSerializer = messageSerializer;
-        _scopeFactory = scopeFactory;
+        Guard.NotNull(
+            messageSerializer,
+            nameof(messageSerializer));
 
-        _consumerOptions = consumerOptions.Value;
-        _definition = definition.Value;
+        Guard.NotNull(
+            scopeFactory,
+            nameof(scopeFactory));
 
-        _logger = logger;
+        Guard.NotNull(
+            consumerOptions,
+            nameof(consumerOptions));
+
+        Guard.NotNull(
+            definition,
+            nameof(definition));
+
+        Guard.NotNull(
+            logger,
+            nameof(logger));
+
+        _channelFactory =
+            channelFactory;
+
+        _messageSerializer =
+            messageSerializer;
+
+        _scopeFactory =
+            scopeFactory;
+
+        _definition =
+            definition.Value;
+
+        _effectiveOptions =
+            RabbitMqEffectiveConsumerOptions.Resolve(
+                consumerOptions.Value,
+                _definition);
+
+        _logger =
+            logger;
     }
 
     public async Task StartAsync(
@@ -72,14 +103,15 @@ internal sealed class RabbitMqConsumerHostedService<TMessage> :
             "PrefetchCountPerConsumer: {PrefetchCount}",
             typeof(TMessage).FullName,
             _definition.QueueName,
-            _consumerOptions.ConcurrentConsumerCount,
-            _consumerOptions.PrefetchCount);
+            _effectiveOptions.ConcurrentConsumerCount,
+            _effectiveOptions.PrefetchCount);
 
         try
         {
             for (int instanceNumber = 1;
                  instanceNumber <=
-                 _consumerOptions.ConcurrentConsumerCount;
+                 _effectiveOptions
+                     .ConcurrentConsumerCount;
                  instanceNumber++)
             {
                 RabbitMqConsumerInstance<TMessage> instance =
@@ -97,7 +129,7 @@ internal sealed class RabbitMqConsumerHostedService<TMessage> :
                             _scopeFactory,
 
                         consumerOptions:
-                            _consumerOptions,
+                            _effectiveOptions,
 
                         definition:
                             _definition,
@@ -123,10 +155,6 @@ internal sealed class RabbitMqConsumerHostedService<TMessage> :
         }
         catch
         {
-            /*
-             * Örneğin 1. ve 2. consumer açıldı ama 3. consumer
-             * açılamadıysa yarım çalışan bir host bırakmıyoruz.
-             */
             await StopStartedInstancesAsync(
                     CancellationToken.None)
                 .ConfigureAwait(false);
@@ -169,10 +197,6 @@ internal sealed class RabbitMqConsumerHostedService<TMessage> :
     private async Task StopStartedInstancesAsync(
         CancellationToken cancellationToken)
     {
-        /*
-         * Önce bütün consumer'ların BasicCancel çağrılarının
-         * başlayabilmesi için paralel durduruyoruz.
-         */
         Task[] stopTasks =
             _instances
                 .Select(

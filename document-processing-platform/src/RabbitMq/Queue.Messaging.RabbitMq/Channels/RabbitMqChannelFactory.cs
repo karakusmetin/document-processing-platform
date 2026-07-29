@@ -3,6 +3,7 @@ using Microsoft.Extensions.Options;
 using Queue.Messaging.RabbitMq.Compatibility;
 using Queue.Messaging.RabbitMq.Configuration;
 using Queue.Messaging.RabbitMq.Connection;
+using Queue.Messaging.RabbitMq.Consuming;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -11,12 +12,12 @@ namespace Queue.Messaging.RabbitMq.Channels;
 internal sealed class RabbitMqChannelFactory : IRabbitMqChannelFactory
 {
     private readonly IRabbitMqConnectionProvider _connectionProvider;
-    private readonly RabbitMqConsumerOptions _consumerOptions;
+    private readonly RabbitMqEffectiveConsumerOptions _consumerOptions;
     private readonly ILogger<RabbitMqChannelFactory> _logger;
 
     public RabbitMqChannelFactory(
         IRabbitMqConnectionProvider connectionProvider,
-        IOptions<RabbitMqConsumerOptions> consumerOptions,
+        IOptions<RabbitMqEffectiveConsumerOptions> consumerOptions,
         ILogger<RabbitMqChannelFactory> logger)
     {
         Guard.NotNull(connectionProvider,nameof(connectionProvider));

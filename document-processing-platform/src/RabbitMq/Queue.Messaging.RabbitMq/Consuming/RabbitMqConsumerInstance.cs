@@ -19,7 +19,7 @@ internal sealed class RabbitMqConsumerInstance<TMessage> :
     private readonly IMessageSerializer _messageSerializer;
     private readonly IServiceScopeFactory _scopeFactory;
 
-    private readonly RabbitMqConsumerOptions _consumerOptions;
+    private readonly RabbitMqEffectiveConsumerOptions _consumerOptions;
     private readonly RabbitMqConsumerDefinition<TMessage> _definition;
 
     private readonly ILogger _logger;
@@ -43,7 +43,7 @@ internal sealed class RabbitMqConsumerInstance<TMessage> :
         IRabbitMqChannelFactory channelFactory,
         IMessageSerializer messageSerializer,
         IServiceScopeFactory scopeFactory,
-        RabbitMqConsumerOptions consumerOptions,
+        RabbitMqEffectiveConsumerOptions consumerOptions,
         RabbitMqConsumerDefinition<TMessage> definition,
         ILogger logger)
     {

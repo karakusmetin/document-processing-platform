@@ -1,8 +1,8 @@
 ﻿namespace Queue.Messaging.RabbitMq.Consuming;
 
 /// <summary>
-/// TMessage türündeki bir consumer'ın queue ve mesaj
-/// sözleşmesi tanımıdır.
+/// TMessage türündeki bir consumer'ın queue, mesaj
+/// sözleşmesi ve endpoint bazlı runtime ayarlarını tanımlar.
 /// </summary>
 public sealed class RabbitMqConsumerDefinition<TMessage>
 {
@@ -17,4 +17,17 @@ public sealed class RabbitMqConsumerDefinition<TMessage>
 
     public string ConsumerTagPrefix { get; set; } =
         string.Empty;
+
+    /*
+     * Null değerler endpoint override'ı olmadığını gösterir.
+     *
+     * Bu durumda RabbitMqConsumerOptions içerisindeki global
+     * değerler kullanılır.
+     */
+
+    public ushort? PrefetchCount { get; set; }
+
+    public int? ConcurrentConsumerCount { get; set; }
+
+    public TimeSpan? ShutdownTimeout { get; set; }
 }
