@@ -2,12 +2,12 @@
 
 /// <summary>
 /// Belirli bir CLR mesaj türünün RabbitMQ yayın rotasını
-/// tanımlar.
+/// ve route bazlı retry ayarlarını tanımlar.
 /// </summary>
 public sealed class RabbitMqMessageRouteDefinition<TMessage>
 {
     /// <summary>
-    /// Mesajın yayınlanacağı exchange.
+    /// Mesajın yayınlanacağı ana exchange.
     /// </summary>
     public string Exchange { get; set; } =
         string.Empty;
@@ -19,13 +19,15 @@ public sealed class RabbitMqMessageRouteDefinition<TMessage>
         string.Empty;
 
     /// <summary>
-    /// Envelope içerisinde taşınacak mesaj sözleşmesi adı.
+    /// Envelope içerisinde taşınacak kararlı mesaj
+    /// sözleşmesi adı.
     /// </summary>
     public string MessageType { get; set; } =
         string.Empty;
 
     /// <summary>
-    /// Envelope içerisinde taşınacak mesaj sözleşmesi sürümü.
+    /// Envelope içerisinde taşınacak mesaj
+    /// sözleşmesi sürümü.
     /// </summary>
     public string MessageVersion { get; set; } =
         string.Empty;
@@ -36,7 +38,26 @@ public sealed class RabbitMqMessageRouteDefinition<TMessage>
     public string? RetryExchange { get; set; }
 
     /// <summary>
-    /// Retry queue routing key'lerinin üretileceği prefix.
+    /// Retry routing key'lerinin üretileceği prefix.
     /// </summary>
     public string? RetryRoutingKeyPrefix { get; set; }
+
+    /// <summary>
+    /// Bu route için maksimum toplam işleme sayısıdır.
+    ///
+    /// İlk işleme de attempt sayısına dahildir.
+    ///
+    /// Null ise global RabbitMqRetryOptions değeri kullanılır.
+    /// </summary>
+    public int? RetryMaximumAttempts { get; set; }
+
+    /// <summary>
+    /// Bu route için retry gecikmeleridir.
+    ///
+    /// Örnek:
+    /// [10, 60, 300]
+    ///
+    /// Null ise global RabbitMqRetryOptions değeri kullanılır.
+    /// </summary>
+    public int[]? RetryDelaySeconds { get; set; }
 }

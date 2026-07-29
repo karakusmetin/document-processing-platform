@@ -1,10 +1,10 @@
-﻿using Queue.Messaging.RabbitMq.Configuration;
-using Queue.Messaging.RabbitMq.Publishing;
-using Queue.Messaging.RabbitMq.Topology;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Queue.Messaging.Abstractions;
 using Queue.Messaging.RabbitMq.Compatibility;
+using Queue.Messaging.RabbitMq.Configuration;
+using Queue.Messaging.RabbitMq.Publishing;
+using Queue.Messaging.RabbitMq.Topology;
 
 namespace Queue.Messaging.RabbitMq.Retrying;
 
@@ -12,29 +12,60 @@ internal sealed class RabbitMqMessageRetryScheduler :
     IMessageRetryScheduler
 {
     private readonly IRabbitMqPublisher _rabbitMqPublisher;
-    private readonly IRabbitMqMessageRouteResolver _routeResolver;
-    private readonly RabbitMqRetryOptions _retryOptions;
-    private readonly RabbitMqPublisherOptions _publisherOptions;
-    private readonly ILogger<RabbitMqMessageRetryScheduler> _logger;
+
+    private readonly IRabbitMqMessageRouteResolver
+        _routeResolver;
+
+    private readonly RabbitMqRetryOptions
+        _globalRetryOptions;
+
+    private readonly RabbitMqPublisherOptions
+        _publisherOptions;
+
+    private readonly ILogger<RabbitMqMessageRetryScheduler>
+        _logger;
 
     public RabbitMqMessageRetryScheduler(
-    IRabbitMqPublisher rabbitMqPublisher,
-    IRabbitMqMessageRouteResolver routeResolver,
-    IOptions<RabbitMqRetryOptions> retryOptions,
-    IOptions<RabbitMqPublisherOptions> publisherOptions,
-    ILogger<RabbitMqMessageRetryScheduler> logger)
+        IRabbitMqPublisher rabbitMqPublisher,
+        IRabbitMqMessageRouteResolver routeResolver,
+        IOptions<RabbitMqRetryOptions> retryOptions,
+        IOptions<RabbitMqPublisherOptions> publisherOptions,
+        ILogger<RabbitMqMessageRetryScheduler> logger)
     {
-        Guard.NotNull(rabbitMqPublisher, nameof(rabbitMqPublisher));
-        Guard.NotNull(routeResolver, nameof(routeResolver));
-        Guard.NotNull(retryOptions, nameof(retryOptions));
-        Guard.NotNull(publisherOptions, nameof(publisherOptions));
-        Guard.NotNull(logger, nameof(logger));
+        Guard.NotNull(
+            rabbitMqPublisher,
+            nameof(rabbitMqPublisher));
 
-        _rabbitMqPublisher = rabbitMqPublisher;
-        _routeResolver = routeResolver;
-        _retryOptions = retryOptions.Value;
-        _publisherOptions = publisherOptions.Value;
-        _logger = logger;
+        Guard.NotNull(
+            routeResolver,
+            nameof(routeResolver));
+
+        Guard.NotNull(
+            retryOptions,
+            nameof(retryOptions));
+
+        Guard.NotNull(
+            publisherOptions,
+            nameof(publisherOptions));
+
+        Guard.NotNull(
+            logger,
+            nameof(logger));
+
+        _rabbitMqPublisher =
+            rabbitMqPublisher;
+
+        _routeResolver =
+            routeResolver;
+
+        _globalRetryOptions =
+            retryOptions.Value;
+
+        _publisherOptions =
+            publisherOptions.Value;
+
+        _logger =
+            logger;
     }
 
     public async Task ScheduleRetryAsync<TMessage>(
@@ -42,7 +73,9 @@ internal sealed class RabbitMqMessageRetryScheduler :
         TimeSpan delay,
         CancellationToken cancellationToken = default)
     {
-        Guard.NotNull(originalEnvelope, nameof(originalEnvelope));
+        Guard.NotNull(
+            originalEnvelope,
+            nameof(originalEnvelope));
 
         if (originalEnvelope.Payload is null)
         {
@@ -59,11 +92,32 @@ internal sealed class RabbitMqMessageRetryScheduler :
                 "Original message attempt must be greater than zero.");
         }
 
+        RabbitMqMessageRoute route =
+            _routeResolver.Resolve<TMessage>();
+
+        string retryExchange =
+            ResolveRetryExchange<TMessage>(
+                route);
+
+        string retryRoutingKeyPrefix =
+            ResolveRetryRoutingKeyPrefix<TMessage>(
+                route);
+
+        RabbitMqEffectiveRetryPolicy retryPolicy =
+            RabbitMqEffectiveRetryPolicy.Resolve(
+                _globalRetryOptions,
+                route.RetryMaximumAttempts,
+                route.RetryDelaySeconds);
+
         int delaySeconds =
-            ResolveDelaySeconds(delay);
+            ResolveDelaySeconds(
+                delay,
+                originalEnvelope.Attempt,
+                retryPolicy);
 
         int nextAttempt =
-            checked(originalEnvelope.Attempt + 1);
+            checked(
+                originalEnvelope.Attempt + 1);
 
         MessageEnvelope<TMessage> retryEnvelope =
             MessageEnvelope<TMessage>.Create(
@@ -76,10 +130,6 @@ internal sealed class RabbitMqMessageRetryScheduler :
                 messageVersion:
                     originalEnvelope.MessageVersion,
 
-                /*
-                 * Retry mesajını yeniden yayınlayan uygulama
-                 * Worker'dır.
-                 */
                 producer:
                     _publisherOptions.ProducerName,
 
@@ -87,32 +137,14 @@ internal sealed class RabbitMqMessageRetryScheduler :
                     originalEnvelope.CorrelationId,
 
                 /*
-                 * Yeni mesajın sebebi önceki fiziksel mesajdır.
+                 * Retry mesajı yeni bir fiziksel mesajdır.
+                 * Önceki MessageId causation zincirine alınır.
                  */
                 causationId:
                     originalEnvelope.MessageId.ToString("D"),
 
                 attempt:
                     nextAttempt);
-
-        RabbitMqMessageRoute route = _routeResolver.Resolve<TMessage>();
-
-        if (string.IsNullOrWhiteSpace(
-                route.RetryExchange) ||
-            string.IsNullOrWhiteSpace(
-                route.RetryRoutingKeyPrefix))
-        {
-            throw new InvalidOperationException(
-                $"RabbitMQ delayed retry is not configured for CLR " +
-                $"message type '{typeof(TMessage).FullName}'.");
-        }
-
-        string retryExchange = Guard.NotNullOrWhiteSpace(route.RetryExchange, nameof(route.RetryExchange));
-
-        string retryRoutingKeyPrefix =
-            Guard.NotNullOrWhiteSpace(
-                route.RetryRoutingKeyPrefix,
-                nameof(route.RetryRoutingKeyPrefix));
 
         string retryRoutingKey =
             RabbitMqTopologyNameBuilder
@@ -126,7 +158,11 @@ internal sealed class RabbitMqMessageRetryScheduler :
                 retryRoutingKey);
 
         /*
-         * Bu çağrı publisher confirm alınmadan tamamlanmaz.
+         * Publish çağrısı publisher confirmation alınmadan
+         * tamamlanmaz.
+         *
+         * Handler bu çağrı tamamlandıktan sonra orijinal
+         * mesaja ACK sonucu dönebilir.
          */
         await _rabbitMqPublisher
             .PublishAsync(
@@ -137,63 +173,134 @@ internal sealed class RabbitMqMessageRetryScheduler :
 
         _logger.LogInformation(
             "RabbitMQ retry message was scheduled and confirmed. " +
+            "MessageClrType: {MessageClrType}, " +
             "OriginalMessageId: {OriginalMessageId}, " +
             "RetryMessageId: {RetryMessageId}, " +
             "CorrelationId: {CorrelationId}, " +
             "CurrentAttempt: {CurrentAttempt}, " +
             "NextAttempt: {NextAttempt}, " +
+            "MaximumAttempts: {MaximumAttempts}, " +
             "DelaySeconds: {DelaySeconds}, " +
             "RoutingKey: {RoutingKey}",
+            typeof(TMessage).FullName,
             originalEnvelope.MessageId,
             retryEnvelope.MessageId,
             retryEnvelope.CorrelationId,
             originalEnvelope.Attempt,
             retryEnvelope.Attempt,
+            retryPolicy.MaximumAttempts,
             delaySeconds,
             retryRoutingKey);
     }
 
-    private int ResolveDelaySeconds(
-        TimeSpan delay)
+    private static string ResolveRetryExchange<TMessage>(
+    RabbitMqMessageRoute route)
     {
-        if (delay <= TimeSpan.Zero)
+        string? retryExchange =
+            route.RetryExchange;
+
+        if (retryExchange is null)
+        {
+            throw new InvalidOperationException(
+                "RabbitMQ delayed retry exchange is not " +
+                "configured for CLR message type " +
+                $"'{typeof(TMessage).FullName}'.");
+        }
+
+        retryExchange =
+            retryExchange.Trim();
+
+        if (retryExchange.Length == 0)
+        {
+            throw new InvalidOperationException(
+                "RabbitMQ delayed retry exchange is not " +
+                "configured for CLR message type " +
+                $"'{typeof(TMessage).FullName}'.");
+        }
+
+        return retryExchange;
+    }
+
+    private static string ResolveRetryRoutingKeyPrefix<TMessage>(
+        RabbitMqMessageRoute route)
+    {
+        string? retryRoutingKeyPrefix =
+            route.RetryRoutingKeyPrefix;
+
+        if (retryRoutingKeyPrefix is null)
+        {
+            throw new InvalidOperationException(
+                "RabbitMQ delayed retry routing key prefix is " +
+                "not configured for CLR message type " +
+                $"'{typeof(TMessage).FullName}'.");
+        }
+
+        retryRoutingKeyPrefix =
+            retryRoutingKeyPrefix.Trim();
+
+        if (retryRoutingKeyPrefix.Length == 0)
+        {
+            throw new InvalidOperationException(
+                "RabbitMQ delayed retry routing key prefix is " +
+                "not configured for CLR message type " +
+                $"'{typeof(TMessage).FullName}'.");
+        }
+
+        return retryRoutingKeyPrefix;
+    }
+
+    private static int ResolveDelaySeconds(
+        TimeSpan requestedDelay,
+        int currentAttempt,
+        RabbitMqEffectiveRetryPolicy retryPolicy)
+    {
+        Guard.NotNull(
+            retryPolicy,
+            nameof(retryPolicy));
+
+        if (requestedDelay <= TimeSpan.Zero)
         {
             throw new ArgumentOutOfRangeException(
-                nameof(delay),
-                delay,
+                nameof(requestedDelay),
+                requestedDelay,
                 "Retry delay must be greater than zero.");
         }
 
-        if (delay.Ticks %
+        if (requestedDelay.Ticks %
             TimeSpan.TicksPerSecond != 0)
         {
             throw new ArgumentException(
                 "Retry delay must contain a whole number of seconds.",
-                nameof(delay));
+                nameof(requestedDelay));
         }
 
         long totalSeconds =
-            delay.Ticks /
+            requestedDelay.Ticks /
             TimeSpan.TicksPerSecond;
 
-        int delaySeconds =
+        int requestedDelaySeconds =
             checked((int)totalSeconds);
 
+        int expectedDelaySeconds =
+            retryPolicy.GetDelaySecondsForCurrentAttempt(
+                currentAttempt);
+
         /*
-         * Topology yalnızca appsettings'teki delay'ler için
-         * retry queue oluşturdu.
-         *
-         * Declare edilmemiş bir routing key'e publish edilmesine
-         * izin vermiyoruz.
+         * Caller'ın topology içerisinde bulunmayan veya mevcut
+         * attempt'e ait olmayan bir gecikme seçmesine izin
+         * vermiyoruz.
          */
-        if (!_retryOptions.DelaySeconds.Contains(
-                delaySeconds))
+        if (requestedDelaySeconds !=
+            expectedDelaySeconds)
         {
             throw new InvalidOperationException(
-                $"Retry delay '{delaySeconds}' seconds is not " +
-                "configured in RabbitMqRetryOptions.");
+                "Requested RabbitMQ retry delay does not match " +
+                "the effective retry policy. " +
+                $"Current attempt: '{currentAttempt}', " +
+                $"expected delay: '{expectedDelaySeconds}' seconds, " +
+                $"requested delay: '{requestedDelaySeconds}' seconds.");
         }
 
-        return delaySeconds;
+        return requestedDelaySeconds;
     }
 }
