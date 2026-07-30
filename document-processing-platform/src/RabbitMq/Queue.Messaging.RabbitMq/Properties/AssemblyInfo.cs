@@ -2,3 +2,6 @@
 
 [assembly: InternalsVisibleTo(
     "DocumentProcessing.UnitTests")]
+
+[assembly: InternalsVisibleTo(
+    "Queue.Messaging.RabbitMq.UnitTests")]
