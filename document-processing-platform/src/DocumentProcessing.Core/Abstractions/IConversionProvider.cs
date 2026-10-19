@@ -6,5 +6,9 @@ public interface IConversionProvider
 {
     string Name { get; }
     bool CanHandle(FileFormat sourceFormat, string profile);
-    Task<Stream> ConvertAsync(Stream source, FileFormat sourceFormat, string profile, CancellationToken cancellationToken);
+    Task<ConversionProviderResult> ConvertAsync(
+        Stream source,
+        FileFormat sourceFormat,
+        string profile,
+        CancellationToken cancellationToken);
 }

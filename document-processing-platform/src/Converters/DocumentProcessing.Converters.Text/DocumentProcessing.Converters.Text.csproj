@@ -14,11 +14,11 @@
 		<Authors>Document Processing</Authors>
 
 		<Description>
-			Plain text and HTML conversion engine for the
+			Plain text (TXT) and CSV conversion engine for the
 			document processing platform.
 		</Description>
 
-		<PackageTags>conversion;text;html;pdf</PackageTags>
+		<PackageTags>conversion;text;csv;pdf</PackageTags>
 
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
 
@@ -30,6 +30,12 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\..\DocumentProcessing.Contracts\DocumentProcessing.Contracts.csproj" />
+	  <ProjectReference Include="..\..\DocumentProcessing.Core\DocumentProcessing.Core.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="PDFsharp" />
+	  <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
 	</ItemGroup>
 
 </Project>

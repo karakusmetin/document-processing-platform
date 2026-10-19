@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms</value>
+  </resheader>
+  <data name="INVALID_REQUEST" xml:space="preserve">
+    <value>Conversion request is invalid.</value>
+  </data>
+  <data name="SOURCE_NOT_FOUND" xml:space="preserve">
+    <value>Source document was not found.</value>
+  </data>
+  <data name="SOURCE_ACCESS_DENIED" xml:space="preserve">
+    <value>Source document cannot be accessed.</value>
+  </data>
+  <data name="SOURCE_READ_FAILED" xml:space="preserve">
+    <value>Source document could not be read due to a temporary I/O error.</value>
+  </data>
+  <data name="UNSUPPORTED_FORMAT" xml:space="preserve">
+    <value>The detected document format is not supported.</value>
+  </data>
+  <data name="SOURCE_FILE_CORRUPTED" xml:space="preserve">
+    <value>Source document is empty or corrupted.</value>
+  </data>
+  <data name="PROVIDER_UNAVAILABLE" xml:space="preserve">
+    <value>No conversion provider is currently available.</value>
+  </data>
+  <data name="RUNTIME_NOT_FOUND" xml:space="preserve">
+    <value>The configured conversion runtime is unavailable.</value>
+  </data>
+  <data name="INPUT_NOT_FOUND" xml:space="preserve">
+    <value>Input document was not found.</value>
+  </data>
+  <data name="PROCESS_START_FAILED" xml:space="preserve">
+    <value>The conversion engine could not be started.</value>
+  </data>
+  <data name="CONVERSION_TIMEOUT" xml:space="preserve">
+    <value>Document conversion timed out.</value>
+  </data>
+  <data name="ENGINE_CRASHED" xml:space="preserve">
+    <value>The conversion engine terminated unexpectedly.</value>
+  </data>
+  <data name="OUTPUT_NOT_PRODUCED" xml:space="preserve">
+    <value>The conversion engine did not produce an output.</value>
+  </data>
+  <data name="CONVERSION_OUTPUT_INVALID" xml:space="preserve">
+    <value>The conversion output is not a valid PDF document.</value>
+  </data>
+  <data name="CONVERSION_IO_FAILED" xml:space="preserve">
+    <value>A temporary I/O error occurred during document conversion.</value>
+  </data>
+  <data name="ARTIFACT_WRITE_FAILED" xml:space="preserve">
+    <value>The converted document could not be stored.</value>
+  </data>
+  <data name="UNEXPECTED_ERROR" xml:space="preserve">
+    <value>An unexpected conversion error occurred.</value>
+  </data>
+</root>

@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<OutputType>Exe</OutputType>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+	<ItemGroup>
+		<ProjectReference Include="..\..\src\DocumentProcessing.Contracts\DocumentProcessing.Contracts.csproj" />
+		<ProjectReference Include="..\..\src\DocumentProcessing.Core\DocumentProcessing.Core.csproj" />
+		<ProjectReference Include="..\..\src\Converters\DocumentProcessing.Converters.Office\DocumentProcessing.Converters.Office.csproj" />
+		<ProjectReference Include="..\..\src\Converters\DocumentProcessing.Converters.Text\DocumentProcessing.Converters.Text.csproj" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Update="appsettings*.json">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+		</None>
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="runtimes\**">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+			<Link>runtimes\%(RecursiveDir)%(Filename)%(Extension)</Link>
+		</None>
+	</ItemGroup>
+</Project>

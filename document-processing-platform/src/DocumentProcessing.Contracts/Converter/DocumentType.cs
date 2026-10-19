@@ -27,6 +27,7 @@ namespace DocumentProcessing.Contracts.Converter
         Png,
         Gif,
         Bmp,
-        Webp
+        Webp,
+        p7s
     }
 }

@@ -1,17 +1,35 @@
-﻿using DocumentProcessing.Contracts.Converter;
+using DocumentProcessing.Contracts.Converter;
+using DocumentProcessing.Converters.Text.Options;
+using DocumentProcessing.Converters.Text.Rendering;
+using DocumentProcessing.Core.Providers;
+using Microsoft.Extensions.Options;
 
 namespace DocumentProcessing.Converters.Text
 {
-    public class TextConverter
+    public sealed class TextConverter(IOptions<TextConversionOptions> options) : ConverterProviderBase
     {
-        public ConverterResult Convert(ConverterRequest request)
+        private readonly TextConversionOptions _options = options.Value;
+
+        public override string Name => "Text Converter";
+
+        public override bool CanConvert(DocumentType sourceType, DocumentType targetType)
         {
-            return new ConverterResult
+            bool supportedSource = sourceType is DocumentType.Txt or DocumentType.Csv;
+            return supportedSource && targetType == DocumentType.Pdf;
+        }
+
+        protected override Task<byte[]> ConvertCoreAsync(ConverterRequest request, CancellationToken cancellationToken)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+
+            byte[] result = request.SourceType switch
             {
-                IsSuccessful = true,
-                Content = request.Content, // TODO: dönüştürülen byte
-                DocumentType = DocumentType.Pdf
+                DocumentType.Txt => new TextPdfRenderer(_options).Render(request.Content),
+                DocumentType.Csv => new CsvPdfRenderer(_options).Render(request.Content),
+                _ => throw new NotSupportedException($"Desteklenmeyen metin tipi: {request.SourceType}")
             };
+
+            return Task.FromResult(result);
         }
     }
 }

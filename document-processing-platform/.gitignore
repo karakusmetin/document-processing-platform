@@ -12,3 +12,7 @@ TestResults/
 coverage/
 # Local build and deployment artifacts
 artifacts/
+
+# Bundled runtime staged locally by tools/libreoffice/bootstrap-libreoffice.ps1 — never commit binaries
+**/runtimes/libreoffice/
+tools/libreoffice/runtime/

@@ -30,6 +30,12 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\..\DocumentProcessing.Contracts\DocumentProcessing.Contracts.csproj" />
+	  <ProjectReference Include="..\..\DocumentProcessing.Core\DocumentProcessing.Core.csproj" />
+	  <ProjectReference Include="..\..\DocumentProcessing.Infrastructure.ProcessExecution\DocumentProcessing.Infrastructure.ProcessExecution.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" />
 	</ItemGroup>
 
 </Project>
