@@ -9,7 +9,7 @@ public sealed class PdfPassThroughProvider : IConversionProvider
 
     public bool CanHandle(FileFormat sourceFormat, string profile) => sourceFormat == FileFormat.Pdf;
 
-    public async Task<Stream> ConvertAsync(
+    public async Task<ConversionProviderResult> ConvertAsync(
         Stream source,
         FileFormat sourceFormat,
         string profile,
@@ -18,6 +18,6 @@ public sealed class PdfPassThroughProvider : IConversionProvider
         MemoryStream output = new();
         await source.CopyToAsync(output, cancellationToken);
         output.Position = 0;
-        return output;
+        return new ConversionProviderResult(output, Name);
     }
 }

@@ -1,3 +1,5 @@
+using DocumentProcessing.Conversion.Errors;
+using DocumentProcessing.Conversion.Validation;
 using DocumentProcessing.Core.Abstractions;
 using DocumentProcessing.Core.Errors;
 using DocumentProcessing.Core.Models;
@@ -7,37 +9,67 @@ namespace DocumentProcessing.Conversion.Services;
 public sealed class ConversionOrchestrator(
     IDocumentSource documentSource,
     IFileFormatDetector formatDetector,
-    IEnumerable<IConversionProvider> providers,
-    IArtifactStore artifactStore) : IConversionOrchestrator
+    IArtifactStore artifactStore,
+    IConversionRequestValidator requestValidator,
+    IConversionProviderResolver providerResolver,
+    IConversionOutputValidator outputValidator,
+    IConversionFailureMapper failureMapper) : IConversionOrchestrator
 {
+    private const string OutputArtifactName = "display.pdf";
+
     public async Task<ConversionExecutionResult> ExecuteAsync(
         ConversionRequest request,
         CancellationToken cancellationToken)
     {
+        ArgumentNullException.ThrowIfNull(request);
+        ConversionStage stage = ConversionStage.RequestValidation;
+
+        ConversionRequestValidationResult validation = requestValidator.Validate(request);
+        if (!validation.IsValid)
+        {
+            return failureMapper.Create(validation.Error!, stage);
+        }
+
         try
         {
-            await using Stream source = await documentSource.OpenReadAsync(request.SourceReference, cancellationToken);
-            FileFormat format = await formatDetector.DetectAsync(source, request.SourceFileName, cancellationToken);
-            IConversionProvider? provider = providers.FirstOrDefault(x => x.CanHandle(format, request.Profile));
+            cancellationToken.ThrowIfCancellationRequested();
 
+            stage = ConversionStage.SourceResolve;
+            await using Stream source = await documentSource.OpenReadAsync(
+                request.SourceReference,
+                cancellationToken);
+
+            stage = ConversionStage.FormatDetection;
+            FileFormat format = await formatDetector.DetectAsync(
+                source,
+                request.SourceFileName,
+                cancellationToken);
+            Reset(source);
+
+            stage = ConversionStage.ProviderSelection;
+            IConversionProvider? provider = providerResolver.Resolve(format, request.Profile);
             if (provider is null)
             {
-                return ConversionExecutionResult.Failure(
-                    ConversionErrorCodes.UnsupportedFormat,
-                    $"No provider supports detected format '{format.Name}'.",
-                    retryable: false,
-                    failedStage: "provider-selection");
+                return failureMapper.Create(
+                    ConversionErrorCatalog.Get(ConversionErrorCodes.UnsupportedFormat),
+                    stage);
             }
 
-            if (source.CanSeek)
-            {
-                source.Position = 0;
-            }
+            stage = ConversionStage.Conversion;
+            ConversionProviderResult conversion = await provider.ConvertAsync(
+                source,
+                format,
+                request.Profile,
+                cancellationToken);
+            await using Stream converted = conversion.Content;
 
-            await using Stream converted = await provider.ConvertAsync(source, format, request.Profile, cancellationToken);
+            stage = ConversionStage.OutputValidation;
+            await outputValidator.ValidateAsync(converted, cancellationToken);
+
+            stage = ConversionStage.ArtifactWrite;
             ArtifactWriteResult artifact = await artifactStore.SaveAsync(
                 request.JobId,
-                "display.pdf",
+                OutputArtifactName,
                 converted,
                 cancellationToken);
 
@@ -45,35 +77,23 @@ public sealed class ConversionOrchestrator(
                 artifact.Reference,
                 artifact.Size,
                 artifact.Sha256,
-                provider.Name);
+                conversion.ProviderName);
         }
-        catch (FileNotFoundException ex)
-        {
-            return ConversionExecutionResult.Failure(
-                ConversionErrorCodes.SourceNotFound,
-                ex.Message,
-                retryable: false,
-                failedStage: "source-resolve");
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return ConversionExecutionResult.Failure(
-                ConversionErrorCodes.SourceAccessDenied,
-                ex.Message,
-                retryable: false,
-                failedStage: "source-resolve");
-        }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException)
         {
             throw;
         }
-        catch (Exception ex)
+        catch (Exception exception)
         {
-            return ConversionExecutionResult.Failure(
-                ConversionErrorCodes.Unexpected,
-                ex.Message,
-                retryable: true,
-                failedStage: "orchestration");
+            return failureMapper.FromException(exception, stage);
+        }
+    }
+
+    private static void Reset(Stream stream)
+    {
+        if (stream.CanSeek)
+        {
+            stream.Position = 0;
         }
     }
 }

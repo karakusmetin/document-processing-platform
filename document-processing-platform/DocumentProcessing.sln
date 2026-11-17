@@ -1,4 +1,4 @@
-﻿
+
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
 VisualStudioVersion = 18.0.0.0
@@ -34,6 +34,14 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Converters.Text", "src\Converters\DocumentProcessing.Converters.Text\DocumentProcessing.Converters.Text.csproj", "{C6DDF73A-1851-4C86-A94E-AA640D1B7E00}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Converters.Image", "src\Converters\DocumentProcessing.Converters.Image\DocumentProcessing.Converters.Image.csproj", "{6868439E-CD37-4C01-B1CF-0D135154DDBE}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Infrastructure.ProcessExecution", "src\DocumentProcessing.Infrastructure.ProcessExecution\DocumentProcessing.Infrastructure.ProcessExecution.csproj", "{71169496-460F-43C2-BF79-E67C3BCA79E9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{5D20AA90-6969-D8BD-9DCD-8634F4692FDA}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DocumentProcessing.Sample.Console", "samples\DocumentProcessing.Sample.Console\DocumentProcessing.Sample.Console.csproj", "{7E90D3E2-9CEF-4DD9-BFDB-88ECD428A75F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -97,6 +105,14 @@ Global
 		{6868439E-CD37-4C01-B1CF-0D135154DDBE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6868439E-CD37-4C01-B1CF-0D135154DDBE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6868439E-CD37-4C01-B1CF-0D135154DDBE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{71169496-460F-43C2-BF79-E67C3BCA79E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{71169496-460F-43C2-BF79-E67C3BCA79E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{71169496-460F-43C2-BF79-E67C3BCA79E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{71169496-460F-43C2-BF79-E67C3BCA79E9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7E90D3E2-9CEF-4DD9-BFDB-88ECD428A75F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7E90D3E2-9CEF-4DD9-BFDB-88ECD428A75F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7E90D3E2-9CEF-4DD9-BFDB-88ECD428A75F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7E90D3E2-9CEF-4DD9-BFDB-88ECD428A75F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -107,6 +123,8 @@ Global
 		{E8A07AE8-5BDC-4AF6-8178-0CE186BE9AB1} = {A6468878-C552-4D3A-8CA2-A25429C34962}
 		{C6DDF73A-1851-4C86-A94E-AA640D1B7E00} = {A6468878-C552-4D3A-8CA2-A25429C34962}
 		{6868439E-CD37-4C01-B1CF-0D135154DDBE} = {A6468878-C552-4D3A-8CA2-A25429C34962}
+		{71169496-460F-43C2-BF79-E67C3BCA79E9} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{7E90D3E2-9CEF-4DD9-BFDB-88ECD428A75F} = {5D20AA90-6969-D8BD-9DCD-8634F4692FDA}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {8516ABBC-3A7E-4A1D-AAE8-B76525AD7808}
