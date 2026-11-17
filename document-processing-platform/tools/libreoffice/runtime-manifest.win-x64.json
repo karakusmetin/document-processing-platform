@@ -1,0 +1,9 @@
+{
+  "product": "LibreOffice Community",
+  "version": "26.2.5.2",
+  "release": "26.2.5",
+  "rid": "win-x64",
+  "source": "https://download.documentfoundation.org/libreoffice/stable/26.2.5/win/x86_64/LibreOffice_26.2.5_Win_x86-64.msi",
+  "sha256": "f15ba07bfcb0186986cf3171063506f5d207c11f8cc051ba0d135209e9e915f9",
+  "executableRelativePath": "program/soffice.com"
+}
